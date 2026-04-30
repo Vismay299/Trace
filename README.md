@@ -66,6 +66,8 @@ a seeded Postgres/OpenRouter test environment.
 - Weekly AI budgets are enforced in `lib/ai/budget.ts`.
 - Prompt templates live in `prompts/` and are provider-portable.
 - Email/password, Google OAuth, and GitHub OAuth are wired through NextAuth.
+  Auth supports both `AUTH_*` names and the existing Vercel/NextAuth aliases:
+  `NEXTAUTH_SECRET`, `GITHUB_CLIENT_*`, and `GOOGLE_CLIENT_*`.
 - Phase 1 intentionally skips embeddings and async queues.
 - Billing and source integrations beyond manual uploads are Phase 2 placeholders.
 

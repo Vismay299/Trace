@@ -17,6 +17,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
 import { getOrCreateBudget } from "@/lib/ai/budget";
+import { getAuthEnv } from "./env";
 
 // The DrizzleAdapter is overloaded for pg/mysql/sqlite. TypeScript can't
 // disambiguate from our untyped `db` proxy, so we cast at the call site.
@@ -34,9 +35,11 @@ const adapterTables = {
   sessionsTable: sessions,
   verificationTokensTable: verificationTokens,
 } as unknown as Parameters<typeof DrizzleAdapter>[1];
+const authEnv = getAuthEnv();
 
 export const authConfig: NextAuthConfig = {
   adapter: DrizzleAdapter(adapterDb, adapterTables),
+  secret: authEnv.secret,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   trustHost: true,
@@ -68,20 +71,20 @@ export const authConfig: NextAuthConfig = {
         };
       },
     }),
-    ...(process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET
+    ...(authEnv.githubClientId && authEnv.githubClientSecret
       ? [
           GitHub({
-            clientId: process.env.AUTH_GITHUB_ID,
-            clientSecret: process.env.AUTH_GITHUB_SECRET,
+            clientId: authEnv.githubClientId,
+            clientSecret: authEnv.githubClientSecret,
             allowDangerousEmailAccountLinking: true,
           }),
         ]
       : []),
-    ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
+    ...(authEnv.googleClientId && authEnv.googleClientSecret
       ? [
           Google({
-            clientId: process.env.AUTH_GOOGLE_ID,
-            clientSecret: process.env.AUTH_GOOGLE_SECRET,
+            clientId: authEnv.googleClientId,
+            clientSecret: authEnv.googleClientSecret,
             allowDangerousEmailAccountLinking: true,
           }),
         ]

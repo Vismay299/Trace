@@ -63,9 +63,14 @@ export function MobileMenu() {
             <NavLinks mobile onNavigate={() => setOpen(false)} />
           </div>
 
-          <Button href="/waitlist" size="lg" className="mt-12 w-full">
-            Join Waitlist
-          </Button>
+          <div className="mt-12 space-y-3">
+            <Button href="/signup" size="lg" className="w-full">
+              Create account
+            </Button>
+            <Button href="/login" size="lg" variant="ghost" className="w-full">
+              Sign in
+            </Button>
+          </div>
         </div>
       ) : null}
     </div>

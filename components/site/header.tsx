@@ -9,9 +9,12 @@ export function Header() {
       <div className="mx-auto grid h-20 max-w-7xl grid-cols-[1fr_auto] items-center px-5 md:grid-cols-[1fr_auto_1fr] lg:px-8">
         <Logo />
         <NavLinks />
-        <div className="hidden justify-end md:flex">
-          <Button href="/waitlist" variant="ghost">
-            Join Waitlist
+        <div className="hidden justify-end gap-3 md:flex">
+          <Button href="/login" variant="link">
+            Sign in
+          </Button>
+          <Button href="/signup" variant="ghost">
+            Create account
           </Button>
         </div>
         <div className="flex justify-end md:hidden">

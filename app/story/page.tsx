@@ -72,8 +72,8 @@ export default function StoryPage() {
         </Card>
 
         <div className="mt-12">
-          <Button href="/waitlist" size="lg">
-            Join the waitlist
+          <Button href="/signup" size="lg">
+            Create your account
           </Button>
         </div>
       </article>

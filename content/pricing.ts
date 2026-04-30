@@ -26,8 +26,8 @@ export const PRICING_TIERS: PricingTier[] = [
       "PDF download",
     ],
     cta: {
-      label: "Choose Strategy Only",
-      href: "/waitlist?tier=strategy",
+      label: "Start free",
+      href: "/signup",
     },
     featured: false,
   },
@@ -45,8 +45,8 @@ export const PRICING_TIERS: PricingTier[] = [
       "Hook variants and citations",
     ],
     cta: {
-      label: "Choose Pro",
-      href: "/waitlist?tier=pro",
+      label: "Create account",
+      href: "/signup",
     },
     featured: true,
   },
@@ -64,8 +64,8 @@ export const PRICING_TIERS: PricingTier[] = [
       "Priority generation",
     ],
     cta: {
-      label: "Choose Studio",
-      href: "/waitlist?tier=studio",
+      label: "Create account",
+      href: "/signup",
     },
     featured: false,
   },

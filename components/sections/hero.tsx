@@ -18,11 +18,11 @@ export function Hero() {
           </p>
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
             <Button
-              href="/waitlist"
+              href="/signup"
               size="lg"
               trailing={<ArrowRight aria-hidden className="size-5" />}
             >
-              Start with strategy
+              Create your account
             </Button>
             <Button href="/story" variant="ghost" size="lg">
               Read the story

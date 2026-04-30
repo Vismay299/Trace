@@ -73,7 +73,7 @@ export default function ProductPage() {
             The first useful artifact Trace creates is not a post. It is the
             lens that makes every post worth writing.
           </p>
-          <Button href="/waitlist" size="lg" className="mt-8">
+          <Button href="/signup" size="lg" className="mt-8">
             Start with strategy
           </Button>
         </div>

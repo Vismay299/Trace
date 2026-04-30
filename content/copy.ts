@@ -147,7 +147,7 @@ export const FAQS = [
   {
     question: "Does Trace train models on my work?",
     answer:
-      "No. The marketing site uses a stub waitlist only, and the product spec is explicit that user sources should be encrypted, deletable, and never used to train models.",
+      "No. Trace treats user sources as private product data: encrypted in transit, deletable from settings, and never used to train models.",
   },
   {
     question: "Which AI model does Trace use?",

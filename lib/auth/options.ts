@@ -17,18 +17,24 @@ import { db } from "@/lib/db";
 import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
 import { getOrCreateBudget } from "@/lib/ai/budget";
 
+// The DrizzleAdapter is overloaded for pg/mysql/sqlite. TypeScript can't
+// disambiguate from our untyped `db` proxy, so we cast at the call site.
+// Runtime is correct — the adapter only reads/writes columns that exist.
+
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
 
 export const authConfig: NextAuthConfig = {
-  adapter: DrizzleAdapter(db, {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  adapter: DrizzleAdapter(db as any, {
     usersTable: users,
     accountsTable: accounts,
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
-  }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any),
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   trustHost: true,
@@ -76,21 +82,21 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     async jwt({ token, user }) {
       if (user?.id) {
-        token.userId = user.id;
+        (token as Record<string, unknown>).userId = user.id;
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token.userId) {
-        (session.user as { id?: string }).id = token.userId as string;
+      const userId = (token as Record<string, unknown>).userId;
+      if (session.user && typeof userId === "string") {
+        (session.user as { id?: string }).id = userId;
       }
       return session;
     },
   },
 };
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    userId?: string;
-  }
-}
+// Note: We do not augment `next-auth/jwt`'s JWT interface because the v5-beta
+// package layout makes that augmentation finicky. Instead, the `jwt` and
+// `session` callbacks above use targeted `as string` casts when reading the
+// stored `userId`. Functionally identical, type-safe at the call sites.

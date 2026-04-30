@@ -25,6 +25,26 @@ export const SECTIONS: { n: InterviewSection; name: string }[] = [
   { n: 5, name: "Voice & Style" },
 ];
 
+let counter = 0;
+function q(
+  section: InterviewSection,
+  sectionName: string,
+  index: number,
+  prompt: string,
+  allowFollowUp = true,
+): InterviewQuestion {
+  counter += 1;
+  return {
+    id: `s${section}q${index}`,
+    section,
+    sectionName,
+    index,
+    globalIndex: counter,
+    prompt,
+    allowFollowUp,
+  };
+}
+
 export const QUESTIONS: InterviewQuestion[] = [
   // Section 1 — Career Arc
   q(1, "Career Arc", 1, "Walk me through your career in 2 minutes. Where did you start, where are you now?"),
@@ -55,26 +75,6 @@ export const QUESTIONS: InterviewQuestion[] = [
   q(5, "Voice & Style", 2, "What kind of content do you hate seeing in your feed?"),
   q(5, "Voice & Style", 3, "Do you want to be known as the technical deep-diver, the practical builder, the contrarian thinker, the data storyteller, or the systems thinker? Pick one or describe your own."),
 ];
-
-let counter = 0;
-function q(
-  section: InterviewSection,
-  sectionName: string,
-  index: number,
-  prompt: string,
-  allowFollowUp = true,
-): InterviewQuestion {
-  counter += 1;
-  return {
-    id: `s${section}q${index}`,
-    section,
-    sectionName,
-    index,
-    globalIndex: counter,
-    prompt,
-    allowFollowUp,
-  };
-}
 
 export function findQuestion(id: string): InterviewQuestion | undefined {
   return QUESTIONS.find((q) => q.id === id);

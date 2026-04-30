@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
   const session = await getOrCreateCheckin(userId);
   const followupsAsked = totalFollowupsAcross(
-    (session.answers ?? {}) as Record<string, { followups?: string[] }>,
+    (session.answers ?? {}) as Parameters<typeof totalFollowupsAcross>[0],
   );
 
   let followup = { needsFollowup: false, followupQuestion: "", reason: "skipped" };

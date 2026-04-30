@@ -9,37 +9,35 @@ declare global {
   var __traceDb: ReturnType<typeof drizzle<typeof schema>> | undefined;
 }
 
-function getClient() {
+function buildClient() {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is not set. See .env.example.");
   }
-  if (!globalThis.__traceDbClient) {
-    globalThis.__traceDbClient = postgres(process.env.DATABASE_URL, {
-      max: 10,
-      idle_timeout: 20,
-      prepare: false,
-    });
-  }
-  return globalThis.__traceDbClient;
+  return postgres(process.env.DATABASE_URL, {
+    max: 10,
+    idle_timeout: 20,
+    prepare: false,
+  });
 }
 
-export function getDb() {
+function buildDb() {
+  if (!globalThis.__traceDbClient) {
+    globalThis.__traceDbClient = buildClient();
+  }
   if (!globalThis.__traceDb) {
-    globalThis.__traceDb = drizzle(getClient(), { schema, logger: false });
+    globalThis.__traceDb = drizzle(globalThis.__traceDbClient, {
+      schema,
+      logger: false,
+    });
   }
   return globalThis.__traceDb;
 }
 
-export const db = new Proxy(
-  {},
-  {
-    get(_t, prop) {
-      const real = getDb() as unknown as Record<string | symbol, unknown>;
-      const v = real[prop];
-      return typeof v === "function" ? (v as Function).bind(real) : v;
-    },
-  },
-) as ReturnType<typeof getDb>;
+// Eager initialization. Drizzle adapters use `is()` instanceof checks under
+// the hood, which means we cannot ship a Proxy here — `db` must be a real
+// drizzle instance the first time anything imports it.
+export const db = buildDb();
+export const getDb = buildDb;
 
 export { schema };
 export * from "./schema";

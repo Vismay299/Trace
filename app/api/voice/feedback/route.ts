@@ -37,20 +37,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  const feedbackNote =
+    parsed.data.feedbackNote ??
+    (parsed.data.feedback === "close_but_edited" && content.editedContent
+      ? summarizeEdit(content.content, content.editedContent)
+      : null);
+
   await db.insert(voiceSamples).values({
     userId,
     generatedContentId: content.id,
     originalContent: content.content,
     editedContent: content.editedContent,
     feedback: parsed.data.feedback,
-    feedbackNote: parsed.data.feedbackNote ?? null,
+    feedbackNote,
   });
 
   await db
     .update(generatedContent)
     .set({
       voiceFeedback: parsed.data.feedback,
-      voiceFeedbackNote: parsed.data.feedbackNote ?? null,
+      voiceFeedbackNote: feedbackNote,
       updatedAt: new Date(),
     })
     .where(eq(generatedContent.id, content.id));
@@ -60,4 +66,13 @@ export async function POST(req: Request) {
   await invalidateNamespace(userId, "voice_score");
 
   return NextResponse.json({ ok: true });
+}
+
+function summarizeEdit(original: string, edited: string) {
+  const delta = edited.length - original.length;
+  return [
+    "User marked this close but edited.",
+    `Length delta: ${delta >= 0 ? "+" : ""}${delta} characters.`,
+    `Edited excerpt: ${edited.slice(0, 500)}`,
+  ].join(" ");
 }

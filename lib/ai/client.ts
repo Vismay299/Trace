@@ -21,7 +21,6 @@ import {
   type Tier,
 } from "./models";
 import {
-  AIBudgetExhaustedError,
   AIInvalidConfigError,
   AIUpstreamError,
   type CallAIOpts,

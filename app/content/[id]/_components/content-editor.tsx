@@ -9,6 +9,11 @@ import { Input } from "@/components/ui/input";
 import { VoiceFeedbackButtons } from "@/components/voice/feedback-buttons";
 import { cn } from "@/lib/cn";
 
+type VoiceFeedbackValue =
+  | "sounds_like_me"
+  | "doesnt_sound_like_me"
+  | "close_but_edited";
+
 export type ContentRow = {
   id: string;
   format: "linkedin" | "instagram" | "x_thread" | "substack";
@@ -282,10 +287,22 @@ export function ContentEditor({
         </p>
         <VoiceFeedbackButtons
           contentId={active.id}
-          current={active.voiceFeedback as any}
+          current={
+            isVoiceFeedbackValue(active.voiceFeedback)
+              ? active.voiceFeedback
+              : undefined
+          }
         />
       </section>
     </div>
+  );
+}
+
+function isVoiceFeedbackValue(value: string | null): value is VoiceFeedbackValue {
+  return (
+    value === "sounds_like_me" ||
+    value === "doesnt_sound_like_me" ||
+    value === "close_but_edited"
   );
 }
 

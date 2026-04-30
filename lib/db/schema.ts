@@ -196,7 +196,9 @@ export const sourceChunks = pgTable(
       () => sourceConnections.id,
       { onDelete: "set null" },
     ),
-    uploadedFileId: uuid("uploaded_file_id"),
+    uploadedFileId: uuid("uploaded_file_id").references(() => uploadedFiles.id, {
+      onDelete: "cascade",
+    }),
     sourceType: varchar("source_type", { length: 50 }).notNull(),
     sourceReference: text("source_reference"),
     sourceDate: timestamp("source_date", { withTimezone: true }),

@@ -10,16 +10,19 @@ export function StrategySection({
   editable,
   initialValue,
   onSave,
+  onRegenerate,
 }: {
   title: string;
   children: React.ReactNode;
   editable?: boolean;
   initialValue?: string;
   onSave?: (value: string) => Promise<void>;
+  onRegenerate?: () => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(initialValue ?? "");
   const [saving, setSaving] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const handleSave = async () => {
     if (!onSave) return;
@@ -32,20 +35,44 @@ export function StrategySection({
     }
   };
 
+  const handleRegenerate = async () => {
+    if (!onRegenerate) return;
+    setRegenerating(true);
+    try {
+      await onRegenerate();
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   return (
     <section className="rounded-card border border-border-strong bg-bg-elev p-6">
       <header className="mb-4 flex items-start justify-between gap-4">
         <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
           {title}
         </h3>
-        {editable && !editing && (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="text-xs text-accent hover:underline"
-          >
-            Edit
-          </button>
+        {(editable || onRegenerate) && !editing && (
+          <div className="flex gap-3">
+            {editable && (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="text-xs text-accent hover:underline"
+              >
+                Edit
+              </button>
+            )}
+            {onRegenerate && (
+              <button
+                type="button"
+                onClick={handleRegenerate}
+                disabled={regenerating}
+                className="text-xs text-accent hover:underline disabled:opacity-60"
+              >
+                {regenerating ? "Regenerating..." : "Regenerate"}
+              </button>
+            )}
+          </div>
         )}
       </header>
       {editing ? (

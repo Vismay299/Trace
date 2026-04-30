@@ -1,3 +1,12 @@
+import React from "react";
+import {
+  Document,
+  Page,
+  StyleSheet,
+  Text,
+  View,
+  renderToBuffer,
+} from "@react-pdf/renderer";
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/auth";
 import { getStrategy } from "@/lib/strategy/generate";
@@ -5,11 +14,28 @@ import { getStrategy } from "@/lib/strategy/generate";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-/**
- * Renders the Strategy Doc as a printable HTML page. The browser's print-to-PDF
- * works against this — keeps Phase 1 free of a heavy headless-browser dep.
- * Phase 2 can swap to @react-pdf/renderer if a true PDF blob is required.
- */
+const styles = StyleSheet.create({
+  page: {
+    padding: 42,
+    color: "#1c1d1d",
+    fontSize: 10,
+    lineHeight: 1.45,
+    fontFamily: "Helvetica",
+  },
+  title: { fontSize: 24, marginBottom: 4 },
+  meta: { color: "#666", fontSize: 9, marginBottom: 18 },
+  section: { marginTop: 14 },
+  heading: {
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 1.6,
+    color: "#555",
+    marginBottom: 6,
+  },
+  text: { marginBottom: 4 },
+  item: { marginBottom: 3 },
+});
+
 export async function GET() {
   let userId: string;
   try {
@@ -23,104 +49,70 @@ export async function GET() {
     return NextResponse.json({ error: "No strategy doc" }, { status: 404 });
   }
 
-  const html = renderHtml(doc);
-  return new Response(html, {
+  const pdf = await renderToBuffer(strategyPdf(doc));
+  return new Response(new Uint8Array(pdf), {
     headers: {
-      "content-type": "text/html; charset=utf-8",
-      "content-disposition": `inline; filename="trace-strategy-v${doc.version}.html"`,
+      "content-type": "application/pdf",
+      "content-disposition": `attachment; filename="trace-strategy-v${doc.version}.pdf"`,
     },
   });
 }
 
-function renderHtml(doc: Awaited<ReturnType<typeof getStrategy>>) {
-  if (!doc) return "";
-  const escape = (s: unknown) =>
-    String(s ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  const list = (xs?: unknown) =>
-    Array.isArray(xs)
-      ? `<ul>${xs.map((x) => `<li>${escape(x)}</li>`).join("")}</ul>`
-      : "";
-  return `<!doctype html>
-<html><head><meta charset="utf-8" />
-<title>Trace — Personal Brand Strategy v${doc.version}</title>
-<style>
-  body { font-family: ui-sans-serif, system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1.5rem; color: #1c1d1d; line-height: 1.55; }
-  h1 { font-size: 28px; margin-bottom: 4px; }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.18em; color: #555; margin-top: 2rem; }
-  ul { padding-left: 1.2rem; }
-  dl { display: grid; grid-template-columns: 180px 1fr; row-gap: 6px; }
-  dt { color: #555; }
-  .meta { color: #888; font-size: 13px; }
-  .pill { font-weight: 600; }
-</style>
-</head><body>
-<h1>Personal Brand Strategy</h1>
-<p class="meta">Version ${doc.version} · Generated ${new Date(doc.createdAt).toDateString()}</p>
+function strategyPdf(doc: NonNullable<Awaited<ReturnType<typeof getStrategy>>>) {
+  return React.createElement(
+    Document,
+    null,
+    React.createElement(
+      Page,
+      { size: "LETTER", style: styles.page },
+      React.createElement(Text, { style: styles.title }, "Personal Brand Strategy"),
+      React.createElement(
+        Text,
+        { style: styles.meta },
+        `Version ${doc.version} · Generated ${new Date(doc.createdAt).toDateString()}`,
+      ),
+      section("Positioning Statement", [doc.positioningStatement]),
+      section("Content Pillars", [
+        `${doc.pillar1Topic ?? "Pillar 1"} - ${doc.pillar1Description ?? ""}`,
+        `${doc.pillar2Topic ?? "Pillar 2"} - ${doc.pillar2Description ?? ""}`,
+        `${doc.pillar3Topic ?? "Pillar 3"} - ${doc.pillar3Description ?? ""}`,
+      ]),
+      section("Contrarian Takes", doc.contrarianTakes ?? []),
+      section("Origin Story", [
+        doc.originStory?.beat1,
+        doc.originStory?.beat2,
+        doc.originStory?.beat3,
+        doc.originStory?.beat4,
+        doc.originStory?.beat5,
+      ]),
+      section("Target Audience", objectLines(doc.targetAudience)),
+      section("Outcome Goal", objectLines(doc.outcomeGoal)),
+      section("Voice Profile", objectLines(doc.voiceProfile)),
+      section("Posting Cadence", objectLines(doc.postingCadence)),
+    ),
+  );
+}
 
-<h2>Positioning Statement</h2>
-<p>${escape(doc.positioningStatement)}</p>
+function section(title: string, values: Array<unknown>) {
+  const clean = values.filter((value) => String(value ?? "").trim().length);
+  return React.createElement(
+    View,
+    { style: styles.section },
+    React.createElement(Text, { style: styles.heading }, title),
+    ...(clean.length ? clean : ["(empty)"]).map((value, index) =>
+      React.createElement(
+        Text,
+        { key: `${title}-${index}`, style: index === 0 ? styles.text : styles.item },
+        String(value),
+      ),
+    ),
+  );
+}
 
-<h2>Content Pillars</h2>
-<ol>
-  <li><span class="pill">${escape(doc.pillar1Topic)}</span> — ${escape(doc.pillar1Description)}</li>
-  <li><span class="pill">${escape(doc.pillar2Topic)}</span> — ${escape(doc.pillar2Description)}</li>
-  <li><span class="pill">${escape(doc.pillar3Topic)}</span> — ${escape(doc.pillar3Description)}</li>
-</ol>
-
-<h2>Contrarian Takes</h2>
-${list(doc.contrarianTakes)}
-
-<h2>Origin Story</h2>
-<ol>
-  ${[1, 2, 3, 4, 5]
-    .map((i) => {
-      const beat = doc.originStory?.[`beat${i}` as `beat1`];
-      return beat ? `<li>${escape(beat)}</li>` : "";
-    })
-    .join("")}
-</ol>
-
-<h2>Target Audience</h2>
-<dl>
-  ${Object.entries(doc.targetAudience ?? {})
-    .map(
-      ([k, v]) =>
-        `<dt>${escape(k.replaceAll("_", " "))}</dt><dd>${escape(Array.isArray(v) ? v.join(", ") : v)}</dd>`,
-    )
-    .join("")}
-</dl>
-
-<h2>Outcome Goal</h2>
-<dl>
-  ${Object.entries(doc.outcomeGoal ?? {})
-    .map(
-      ([k, v]) =>
-        `<dt>${escape(k.replaceAll("_", " "))}</dt><dd>${escape(v)}</dd>`,
-    )
-    .join("")}
-</dl>
-
-<h2>Voice Profile</h2>
-<dl>
-  ${Object.entries(doc.voiceProfile ?? {})
-    .map(
-      ([k, v]) =>
-        `<dt>${escape(k.replaceAll("_", " "))}</dt><dd>${escape(Array.isArray(v) ? v.join(", ") : v)}</dd>`,
-    )
-    .join("")}
-</dl>
-
-<h2>Posting Cadence</h2>
-<dl>
-  ${Object.entries(doc.postingCadence ?? {})
-    .map(([k, v]) => `<dt>${escape(k.replaceAll("_", " "))}</dt><dd>${escape(v)}</dd>`)
-    .join("")}
-</dl>
-
-<p class="meta" style="margin-top: 3rem;">trace.dev</p>
-<script>setTimeout(() => window.print && window.print(), 600);</script>
-</body></html>`;
+function objectLines(value: Record<string, unknown> | null) {
+  if (!value) return [];
+  return Object.entries(value).map(([key, entry]) => {
+    const rendered = Array.isArray(entry) ? entry.join(", ") : String(entry ?? "");
+    return `${key.replaceAll("_", " ")}: ${rendered}`;
+  });
 }

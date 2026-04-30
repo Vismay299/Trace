@@ -4,7 +4,7 @@
  * in a single prompt. Cached per (chunk_ids, strategy_version).
  */
 import { z } from "zod";
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   sourceChunks,

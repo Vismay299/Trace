@@ -39,6 +39,7 @@ export async function parseFile(
       `Unsupported file type: ${ext}. Allowed: PDF, DOCX, TXT, MD, CSV, JSON.`,
     );
   }
+  validateMagicBytes(buffer, ext);
 
   if (ext === ".pdf") {
     const { default: pdfParse } = await import("pdf-parse");
@@ -68,6 +69,24 @@ export async function parseFile(
     return prettyJson(buffer);
   }
   throw new Error(`Unsupported: ${ext}`);
+}
+
+function validateMagicBytes(buffer: Buffer, ext: string) {
+  if (ext === ".pdf" && !buffer.subarray(0, 5).equals(Buffer.from("%PDF-"))) {
+    throw new Error("File extension is PDF, but the file header is not a PDF.");
+  }
+  if (ext === ".docx") {
+    const isZip = buffer[0] === 0x50 && buffer[1] === 0x4b;
+    if (!isZip) {
+      throw new Error("File extension is DOCX, but the file header is not a DOCX/ZIP container.");
+    }
+  }
+  if ([".txt", ".md", ".markdown", ".csv", ".json"].includes(ext)) {
+    const sample = buffer.subarray(0, Math.min(buffer.length, 4096));
+    if (sample.includes(0)) {
+      throw new Error("Text-like upload appears to be binary data.");
+    }
+  }
 }
 
 function prettyCsv(buffer: Buffer): ParsedFile {

@@ -17,7 +17,16 @@ import * as client from "../client";
 
 describe("runAntiSlop", () => {
   beforeEach(() => {
-    vi.mocked(client.callAI).mockClear();
+    vi.mocked(client.callAI).mockReset();
+    vi.mocked(client.callAI).mockResolvedValue({
+      content: '{"verdict":"PASS","violations":[],"suggested_fix":""}',
+      inputTokens: 0,
+      outputTokens: 0,
+      modelUsed: "test",
+      tier: 3,
+      costUsd: 0,
+      cached: false,
+    });
   });
 
   it("regex pre-filter short-circuits without calling the LLM", async () => {
@@ -58,6 +67,7 @@ describe("runAntiSlop", () => {
 
 describe("generateWithSlopRetries", () => {
   beforeEach(() => {
+    vi.mocked(client.callAI).mockReset();
     vi.mocked(client.callAI).mockResolvedValue({
       content: '{"verdict":"PASS"}',
       inputTokens: 0,

@@ -50,7 +50,7 @@ const instagramSchema = z.object({
 const xThreadSchema = z.object({
   hooks: z.array(z.string()).length(3),
   tweets: z
-    .array(z.object({ index: z.number(), text: z.string() }))
+    .array(z.object({ index: z.number(), text: z.string().max(280) }))
     .min(6)
     .max(10),
   citation_line: z.string(),
@@ -63,6 +63,17 @@ const substackSchema = z.object({
   body: z.string(),
   citation_line: z.string(),
 });
+
+type GeneratedRaw = {
+  hooks?: string[];
+  body?: string;
+  citation_line?: string;
+  slides?: { index: number; text: string; design_note?: string }[];
+  tweets?: { index: number; text: string }[];
+  title?: string;
+  subtitle?: string;
+  caption?: string;
+};
 
 export async function generateForStory(
   userId: string,
@@ -148,7 +159,7 @@ async function generateOneFormat(
     ? `\n\nADDITIONAL GUIDANCE FROM USER\n${opts.regenerationGuidance}`
     : "";
 
-  const result = await generateWithSlopRetries({
+  const result = await generateWithSlopRetries<GeneratedRaw>({
     userId,
     extractText: (raw) => extractCheckableText(format, raw),
     generate: async (attempt, lastViolations) => {
@@ -200,7 +211,7 @@ function formatPromptName(format: ContentFormat): string {
   }
 }
 
-function parseFormat(format: ContentFormat, raw: string) {
+function parseFormat(format: ContentFormat, raw: string): GeneratedRaw {
   const json = JSON.parse(raw);
   switch (format) {
     case "linkedin":
@@ -241,7 +252,7 @@ async function persistGenerated(args: {
   userId: string;
   storySeedId: string;
   format: ContentFormat;
-  raw: any;
+  raw: GeneratedRaw;
   promptVersion: string;
   slopReviewNeeded: boolean;
   citation: string;
@@ -287,7 +298,7 @@ async function persistGenerated(args: {
   return created;
 }
 
-function renderForFormat(format: ContentFormat, r: any): string {
+function renderForFormat(format: ContentFormat, r: GeneratedRaw): string {
   if (format === "linkedin") {
     const hook = r.hooks?.[0] ?? "";
     return [hook, r.body, r.citation_line].filter(Boolean).join("\n\n");

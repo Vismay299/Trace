@@ -27,14 +27,25 @@ export function StrategyView({
   const [doc, setDoc] = useState<StrategyDoc>(initialDoc);
   const [samples] = useState<SamplePost[]>(initialSamples);
 
-  const updateField = async (
-    field: keyof StrategyDoc,
-    value: unknown,
-  ) => {
+  const updatePatch = async (patch: Record<string, unknown>) => {
     const res = await fetch("/api/strategy", {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ [field]: value }),
+      body: JSON.stringify(patch),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setDoc(data.strategy);
+    }
+  };
+  const updateField = async (field: keyof StrategyDoc, value: unknown) => {
+    await updatePatch({ [field]: value });
+  };
+  const regenerateSection = async (section: string) => {
+    const res = await fetch("/api/strategy/regenerate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ section }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -73,11 +84,24 @@ export function StrategyView({
         editable
         initialValue={doc.positioningStatement ?? ""}
         onSave={(v) => updateField("positioningStatement", v)}
+        onRegenerate={() => regenerateSection("positioningStatement")}
       >
         <p className="text-lg">{doc.positioningStatement}</p>
       </StrategySection>
 
-      <StrategySection title="Content Pillars" editable={false}>
+      <StrategySection
+        title="Content Pillars"
+        editable
+        initialValue={stringifyJson({
+          pillar1Topic: doc.pillar1Topic,
+          pillar1Description: doc.pillar1Description,
+          pillar2Topic: doc.pillar2Topic,
+          pillar2Description: doc.pillar2Description,
+          pillar3Topic: doc.pillar3Topic,
+          pillar3Description: doc.pillar3Description,
+        })}
+        onSave={(v) => updatePatch(parseObject(v))}
+      >
         <ul className="space-y-4">
           {[1, 2, 3].map((i) => {
             const topic = doc[`pillar${i}Topic` as keyof StrategyDoc] as
@@ -96,7 +120,13 @@ export function StrategyView({
         </ul>
       </StrategySection>
 
-      <StrategySection title="Contrarian Takes">
+      <StrategySection
+        title="Contrarian Takes"
+        editable
+        initialValue={stringifyJson(doc.contrarianTakes ?? [])}
+        onSave={(v) => updateField("contrarianTakes", parseJson(v))}
+        onRegenerate={() => regenerateSection("contrarianTakes")}
+      >
         <ul className="list-disc space-y-2 pl-5">
           {(doc.contrarianTakes ?? []).map((t, i) => (
             <li key={i} className="text-text">
@@ -106,7 +136,13 @@ export function StrategyView({
         </ul>
       </StrategySection>
 
-      <StrategySection title="Origin Story">
+      <StrategySection
+        title="Origin Story"
+        editable
+        initialValue={stringifyJson(doc.originStory ?? {})}
+        onSave={(v) => updateField("originStory", parseObject(v))}
+        onRegenerate={() => regenerateSection("originStory")}
+      >
         <ol className="space-y-2">
           {([1, 2, 3, 4, 5] as const).map((i) => {
             const beat = doc.originStory?.[`beat${i}` as `beat1`];
@@ -119,7 +155,13 @@ export function StrategyView({
         </ol>
       </StrategySection>
 
-      <StrategySection title="Target Audience">
+      <StrategySection
+        title="Target Audience"
+        editable
+        initialValue={stringifyJson(doc.targetAudience ?? {})}
+        onSave={(v) => updateField("targetAudience", parseObject(v))}
+        onRegenerate={() => regenerateSection("targetAudience")}
+      >
         <dl className="grid gap-2 text-text">
           {Object.entries(doc.targetAudience ?? {}).map(([k, v]) => (
             <div key={k} className="grid grid-cols-3 gap-3">
@@ -132,7 +174,13 @@ export function StrategyView({
         </dl>
       </StrategySection>
 
-      <StrategySection title="Outcome Goal">
+      <StrategySection
+        title="Outcome Goal"
+        editable
+        initialValue={stringifyJson(doc.outcomeGoal ?? {})}
+        onSave={(v) => updateField("outcomeGoal", parseObject(v))}
+        onRegenerate={() => regenerateSection("outcomeGoal")}
+      >
         <dl className="grid gap-2 text-text">
           {Object.entries(doc.outcomeGoal ?? {}).map(([k, v]) => (
             <div key={k} className="grid grid-cols-3 gap-3">
@@ -143,7 +191,13 @@ export function StrategyView({
         </dl>
       </StrategySection>
 
-      <StrategySection title="Voice Profile">
+      <StrategySection
+        title="Voice Profile"
+        editable
+        initialValue={stringifyJson(doc.voiceProfile ?? {})}
+        onSave={(v) => updateField("voiceProfile", parseObject(v))}
+        onRegenerate={() => regenerateSection("voiceProfile")}
+      >
         <dl className="grid gap-2 text-text">
           {Object.entries(doc.voiceProfile ?? {}).map(([k, v]) => (
             <div key={k} className="grid grid-cols-3 gap-3">
@@ -156,7 +210,13 @@ export function StrategyView({
         </dl>
       </StrategySection>
 
-      <StrategySection title="Posting Cadence">
+      <StrategySection
+        title="Posting Cadence"
+        editable
+        initialValue={stringifyJson(doc.postingCadence ?? {})}
+        onSave={(v) => updateField("postingCadence", parseObject(v))}
+        onRegenerate={() => regenerateSection("postingCadence")}
+      >
         <ul className="space-y-1 text-text">
           {Object.entries(doc.postingCadence ?? {}).map(([k, v]) => (
             <li key={k}>
@@ -212,6 +272,22 @@ export function StrategyView({
       )}
     </div>
   );
+}
+
+function stringifyJson(value: unknown) {
+  return JSON.stringify(value, null, 2);
+}
+
+function parseJson(value: string): unknown {
+  return JSON.parse(value);
+}
+
+function parseObject(value: string): Record<string, unknown> {
+  const parsed = parseJson(value);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Expected a JSON object.");
+  }
+  return parsed as Record<string, unknown>;
 }
 
 function formatLabel(f: string) {

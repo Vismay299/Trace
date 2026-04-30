@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getUserId } from "@/lib/auth";
 import { getOrCreateCheckin } from "@/lib/checkin/session";
 import { DEFAULT_CHECKIN_QUESTIONS } from "@/lib/checkin/questions";
+import type { WeeklyCheckin } from "@/lib/db/schema";
 import { CheckinChat } from "./_components/checkin-chat";
 
 export const metadata = { title: "Weekly check-in" };
@@ -30,10 +31,17 @@ export default async function WeeklyPage() {
           id: q.id,
           prompt: q.prompt,
         }))}
-        initialAnswers={(session.answers ?? {}) as any}
+        initialAnswers={normalizeAnswers(session.answers)}
         initialIsComplete={session.isComplete}
         weekStartDate={session.weekStartDate}
       />
     </section>
   );
+}
+
+function normalizeAnswers(sessionAnswers: WeeklyCheckin["answers"] | null) {
+  return (sessionAnswers ?? {}) as Record<
+    string,
+    { answer: string; followups?: string[]; mode?: "text" | "voice" }
+  >;
 }

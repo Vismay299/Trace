@@ -7,8 +7,8 @@ type SpeechRecognitionLike = {
   interimResults: boolean;
   lang: string;
   maxAlternatives: number;
-  onresult: ((event: any) => void) | null;
-  onerror: ((event: any) => void) | null;
+  onresult: ((event: SpeechRecognitionResultEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
   onend: (() => void) | null;
   start: () => void;
   stop: () => void;
@@ -16,6 +16,16 @@ type SpeechRecognitionLike = {
 };
 
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+type SpeechRecognitionResultEventLike = {
+  resultIndex: number;
+  results: ArrayLike<{
+    isFinal: boolean;
+    0?: { transcript?: string };
+  }>;
+};
+type SpeechRecognitionErrorEventLike = {
+  error?: string;
+};
 
 function getCtor(): SpeechRecognitionCtor | null {
   if (typeof window === "undefined") return null;
@@ -99,7 +109,7 @@ export function useVoiceInput(opts?: {
     r.lang = lang;
     r.maxAlternatives = 1;
 
-    r.onresult = (event: any) => {
+    r.onresult = (event) => {
       let interim = "";
       let appended = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -117,7 +127,7 @@ export function useVoiceInput(opts?: {
       cleanupTimer();
       silenceTimer.current = setTimeout(() => stop(), silenceMs);
     };
-    r.onerror = (event: any) => {
+    r.onerror = (event) => {
       const code = event?.error ?? "unknown";
       if (code !== "aborted") setError(humanizeError(code));
       setIsListening(false);

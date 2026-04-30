@@ -1226,6 +1226,19 @@
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
+        },
+        "source_chunks_uploaded_file_id_uploaded_files_id_fk": {
+          "name": "source_chunks_uploaded_file_id_uploaded_files_id_fk",
+          "tableFrom": "source_chunks",
+          "tableTo": "uploaded_files",
+          "columnsFrom": [
+            "uploaded_file_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},

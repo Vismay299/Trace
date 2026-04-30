@@ -8,7 +8,6 @@
  * over-spend. On transport failure we restore the count (refundBudget).
  */
 import { sql } from "drizzle-orm";
-import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { aiBudgets, type AiBudget } from "@/lib/db/schema";
 import { AIBudgetExhaustedError } from "./types";
@@ -125,7 +124,15 @@ export async function checkAndDecrement(
     RETURNING ${usedColSql} AS used, ${limitColSql} AS limit_, billing_period_end
   `);
 
-  const row = (result as unknown as { rows?: any[] }).rows?.[0] ?? (Array.isArray(result) ? result[0] : undefined);
+  type BudgetUpdateRow = {
+    used: number | string;
+    limit_: number | string;
+    billing_period_end: string | Date;
+  };
+  const rows =
+    (result as unknown as { rows?: BudgetUpdateRow[] }).rows ??
+    (Array.isArray(result) ? (result as unknown as BudgetUpdateRow[]) : []);
+  const row = rows[0];
   if (!row) {
     throw new AIBudgetExhaustedError(
       tier,

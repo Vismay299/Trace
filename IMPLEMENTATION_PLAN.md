@@ -445,27 +445,27 @@ Update this table as each segment is completed. Format: ✅ done · 🔄 in prog
 
 | #  | Segment                                                                  | Status | Date completed | Notes |
 | -- | ------------------------------------------------------------------------ | ------ | -------------- | ----- |
-| 0  | Repo bootstrap                                                           | ⬜     |                |       |
-| 1  | Drizzle schema + initial migration                                       | ⬜     |                |       |
-| 2  | Auth (NextAuth + Supabase)                                               | ⬜     |                |       |
-| 3  | AI client + tier router + usage logging                                  | ⬜     |                |       |
-| 4  | AI budget enforcement                                                    | ⬜     |                |       |
-| 5  | Cache layer (DB-backed)                                                  | ⬜     |                |       |
-| 6  | Prompt templates + anti-slop banned patterns                             | ⬜     |                |       |
-| 7  | Anti-slop runtime                                                        | ⬜     |                |       |
-| 8  | Landing page + waitlist                                                  | ⬜     |                |       |
-| 9  | Onboarding interview (text mode)                                         | ⬜     |                |       |
-| 10 | Voice input via Web Speech API                                           | ⬜     |                |       |
-| 11 | Strategy Doc generation + view + edit                                    | ⬜     |                |       |
-| 12 | File upload                                                              | ⬜     |                |       |
-| 13 | File parsing + chunking                                                  | ⬜     |                |       |
-| 14 | Story seed extraction (Content Mine)                                     | ⬜     |                |       |
-| 15 | Content generation: LinkedIn                                             | ⬜     |                |       |
-| 16 | Content generation: Instagram, X thread, Substack                        | ⬜     |                |       |
-| 17 | Content editor UI                                                        | ⬜     |                |       |
-| 18 | Voice calibration loop                                                   | ⬜     |                |       |
-| 19 | Sample posts for free tier ("Aha" moment)                                | ⬜     |                |       |
-| 20 | Weekly Check-In (text mode)                                              | ⬜     |                |       |
+| 0  | Repo bootstrap                                                           | ✅     | 2026-04-30     | App scaffold, scripts, config, and build-safe local setup verified. |
+| 1  | Drizzle schema + initial migration                                       | ✅     | 2026-04-30     | Phase 1 schema/migration present, including upload chunk FK. |
+| 2  | Auth (NextAuth + Supabase)                                               | ✅     | 2026-04-30     | Credentials/GitHub auth, signup, middleware, and budget provisioning wired. |
+| 3  | AI client + tier router + usage logging                                  | ✅     | 2026-04-30     | Single OpenRouter gateway, tier tests, and usage logging verified. |
+| 4  | AI budget enforcement                                                    | ✅     | 2026-04-30     | Budget gate, refunds, budget/usage APIs, and tests verified. |
+| 5  | Cache layer (DB-backed)                                                  | ✅     | 2026-04-30     | Cache helper, invalidation, schema, and focused tests verified. |
+| 6  | Prompt templates + anti-slop banned patterns                             | ✅     | 2026-04-30     | Prompt files, loader, and anti-slop patterns verified by tests. |
+| 7  | Anti-slop runtime                                                        | ✅     | 2026-04-30     | Regex + LLM detector retry loop fixed and tests pass. |
+| 8  | Landing page + waitlist                                                  | ✅     | 2026-04-30     | Waitlist table/API/email flow and marketing surface wired. |
+| 9  | Onboarding interview (text mode)                                         | ✅     | 2026-04-30     | Interview questions, persistence, follow-ups, progress, and completion routes wired. |
+| 10 | Voice input via Web Speech API                                           | ✅     | 2026-04-30     | Voice hook/components integrated with browser fallback. |
+| 11 | Strategy Doc generation + view + edit                                    | ✅     | 2026-04-30     | Generation, editable sections, section regen API, samples, and PDF output wired. |
+| 12 | File upload                                                              | ✅     | 2026-04-30     | Upload quota, storage, delete, extension + magic-byte checks wired. |
+| 13 | File parsing + chunking                                                  | ✅     | 2026-04-30     | Parser/chunker, inline processing, and process route wired. |
+| 14 | Story seed extraction (Content Mine)                                     | ✅     | 2026-04-30     | Tier 2 extraction, persistence, ranking UI, and story APIs wired. |
+| 15 | Content generation: LinkedIn                                             | ✅     | 2026-04-30     | LinkedIn generation, anti-slop retry, citation, and job-status stub wired. |
+| 16 | Content generation: Instagram, X thread, Substack                        | ✅     | 2026-04-30     | All remaining formats wired with structured metadata and validation. |
+| 17 | Content editor UI                                                        | ✅     | 2026-04-30     | Multi-format tabs, hooks, edit/save, approve/reject/regenerate/copy wired. |
+| 18 | Voice calibration loop                                                   | ✅     | 2026-04-30     | Feedback, score, samples API, few-shot invalidation, and edit summary wired. |
+| 19 | Sample posts for free tier ("Aha" moment)                                | ✅     | 2026-04-30     | Strategy-triggered and standalone sample generation route wired. |
+| 20 | Weekly Check-In (text mode)                                              | ✅     | 2026-04-30     | Weekly check-in, adaptive follow-ups, completion, history/detail APIs wired. |
 | 21 | Voice mode for weekly check-in                                           | ⬜     |                |       |
 | 22 | Signal assessment + product stage classification                         | ⬜     |                |       |
 | 23 | Weekly Narrative Planner                                                 | ⬜     |                |       |

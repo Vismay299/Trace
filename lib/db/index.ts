@@ -3,21 +3,27 @@ import postgres from "postgres";
 import * as schema from "./schema";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __traceDbClient: ReturnType<typeof postgres> | undefined;
-  // eslint-disable-next-line no-var
   var __traceDb: ReturnType<typeof drizzle<typeof schema>> | undefined;
 }
 
 function buildClient() {
-  if (!process.env.DATABASE_URL) {
+  const url = process.env.DATABASE_URL;
+  if (!url && !isNextBuild()) {
     throw new Error("DATABASE_URL is not set. See .env.example.");
   }
-  return postgres(process.env.DATABASE_URL, {
+  return postgres(url ?? "postgres://postgres:postgres@127.0.0.1:5432/trace_build", {
     max: 10,
     idle_timeout: 20,
     prepare: false,
   });
+}
+
+function isNextBuild() {
+  return (
+    process.env.NEXT_PHASE === "phase-production-build" ||
+    process.env.npm_lifecycle_event === "build"
+  );
 }
 
 function buildDb() {

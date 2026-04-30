@@ -20,7 +20,10 @@ export function StoryFilters({
     router.push(`/mine?${next.toString()}`);
   };
 
-  const tabs = [{ label: "All", value: undefined }, ...pillars.map((p) => ({ label: p, value: p }))];
+  const tabs = [
+    { label: "All", value: undefined },
+    ...pillars.map((p) => ({ label: p, value: p })),
+  ];
 
   return (
     <div className="flex flex-wrap gap-2">

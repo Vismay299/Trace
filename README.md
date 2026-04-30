@@ -1,18 +1,23 @@
 # Trace
 
-Trace is a strategy-first content engine for builders. This branch contains the
-public marketing site: a dark, minimal Next.js App Router site that explains the
-product journey from positioning to source-backed content and routes visitors to
-the waitlist.
+Trace is a strategy-first content engine for builders. This Phase 1 build turns
+an onboarding interview, uploaded source material, and weekly check-ins into
+source-backed content drafts with model routing, budget controls, voice-first
+input, anti-slop checks, and narrative planning.
 
-## Frontend Stack
+## Stack
 
 - Next.js 15 App Router
 - React 19
 - TypeScript strict mode
 - Tailwind CSS v4
-- Lucide icons
-- Playwright smoke tests
+- Drizzle ORM + Postgres
+- NextAuth
+- Supabase Storage
+- OpenRouter
+- Resend
+- Recharts
+- Vitest and Playwright
 
 ## Run Locally
 
@@ -30,9 +35,12 @@ npx pnpm typecheck
 npx pnpm lint
 npx pnpm build
 npx pnpm test
+npx pnpm test:e2e
 ```
 
-Playwright starts the dev server automatically for tests.
+Playwright starts the dev server automatically for tests. The authenticated
+golden-path E2E is present but skipped unless `TRACE_E2E_FULL=true` is set with
+a seeded Postgres/OpenRouter test environment.
 
 ## Routes
 
@@ -41,27 +49,34 @@ Playwright starts the dev server automatically for tests.
 - `/product` - Feature walkthrough with static product visuals
 - `/pricing` - Tiers, comparison table, FAQ
 - `/waitlist` - Standalone signup page with tier-aware query params
+- `/onboarding` - Strategy interview with text/voice input
+- `/strategy` - Strategy Doc generation, edit, regeneration, and PDF
+- `/sources` - Manual source uploads and parsing
+- `/mine` - Source-backed story seeds
+- `/content` - Generated drafts and feedback
+- `/weekly` - Voice-first weekly check-in with low-signal mode
+- `/weekly/plan` - Weekly narrative plan and plan-to-story conversion
+- `/dashboard` - Production stats, pillar balance, activity, AI budget
+- `/settings` - Profile, tier, integrations placeholder, data deletion
 - `/_dev/kit` - Unlinked component kitchen sink for QA
 
-## Editing Copy
+## Phase 1 Notes
 
-Marketing copy lives in `content/copy.ts`. Pricing tiers live in
-`content/pricing.ts`. Product visuals are static components in
-`components/visuals/`; they do not call AI or connect to data sources.
-
-## Waitlist Stub
-
-`/api/waitlist` validates and logs submissions only. Durable persistence,
-Resend, Supabase, auth, billing, and AI pipelines belong to the main
-implementation plan and are intentionally out of scope for this branch.
+- Every LLM call goes through `lib/ai/client.ts`.
+- Weekly AI budgets are enforced in `lib/ai/budget.ts`.
+- Prompt templates live in `prompts/` and are provider-portable.
+- Phase 1 intentionally skips embeddings and async queues.
+- Billing and source integrations beyond manual uploads are Phase 2 placeholders.
 
 ## Deploy
 
-The site is ready for Vercel:
+The app is ready for Vercel:
 
 ```sh
 npx pnpm build
 ```
 
-Set `NEXT_PUBLIC_SITE_URL` in Vercel when the production domain is known so
-Open Graph, sitemap, and robots metadata use the final URL.
+Required production services are Postgres/Supabase, Supabase Storage, NextAuth
+secrets/providers, OpenRouter, and Resend. Set `NEXT_PUBLIC_SITE_URL` in Vercel
+when the production domain is known so Open Graph, sitemap, and robots metadata
+use the final URL.

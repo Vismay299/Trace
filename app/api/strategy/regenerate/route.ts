@@ -48,7 +48,10 @@ export async function POST(req: Request) {
 
   const doc = await getStrategy(userId);
   if (!doc) {
-    return NextResponse.json({ error: "No strategy doc to regenerate" }, { status: 404 });
+    return NextResponse.json(
+      { error: "No strategy doc to regenerate" },
+      { status: 404 },
+    );
   }
 
   try {
@@ -69,7 +72,9 @@ export async function POST(req: Request) {
       maxOutputTokens: 1800,
       promptVersion: "strategy-section-regenerate-v1",
     });
-    const { value } = z.object({ value: z.unknown() }).parse(JSON.parse(result.content));
+    const { value } = z
+      .object({ value: z.unknown() })
+      .parse(JSON.parse(result.content));
     const patch = patchForSection(parsed.data.section, value, doc.version);
     const [updated] = await db
       .update(strategyDocs)

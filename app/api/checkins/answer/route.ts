@@ -15,6 +15,7 @@ export const runtime = "nodejs";
 
 const schema = z.object({
   questionId: z.string().min(1),
+  questionPrompt: z.string().min(1).max(1000).optional(),
   answer: z.string().min(1).max(8000),
   inputMode: z.enum(["text", "voice"]).default("text"),
   isFollowupReply: z.boolean().optional(),
@@ -34,9 +35,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Validation failed" }, { status: 400 });
   }
 
-  const question = DEFAULT_CHECKIN_QUESTIONS.find(
-    (q) => q.id === parsed.data.questionId,
-  );
+  const question =
+    DEFAULT_CHECKIN_QUESTIONS.find((q) => q.id === parsed.data.questionId) ??
+    (parsed.data.questionPrompt
+      ? { id: parsed.data.questionId, prompt: parsed.data.questionPrompt }
+      : null);
 
   let updated;
   if (parsed.data.isFollowupReply) {
@@ -44,6 +47,7 @@ export async function POST(req: Request) {
       userId,
       parsed.data.questionId,
       parsed.data.answer,
+      parsed.data.inputMode,
     );
   } else {
     updated = await saveCheckinAnswer(userId, parsed.data.questionId, {
@@ -57,12 +61,12 @@ export async function POST(req: Request) {
     (session.answers ?? {}) as Parameters<typeof totalFollowupsAcross>[0],
   );
 
-  let followup = { needsFollowup: false, followupQuestion: "", reason: "skipped" };
-  if (
-    !parsed.data.skipFollowup &&
-    !parsed.data.isFollowupReply &&
-    question
-  ) {
+  let followup = {
+    needsFollowup: false,
+    followupQuestion: "",
+    reason: "skipped",
+  };
+  if (!parsed.data.skipFollowup && !parsed.data.isFollowupReply && question) {
     try {
       followup = await maybeAskCheckinFollowUp({
         userId,
@@ -72,7 +76,11 @@ export async function POST(req: Request) {
       });
     } catch (err) {
       if (err instanceof AIBudgetExhaustedError) {
-        followup = { needsFollowup: false, followupQuestion: "", reason: "budget_exhausted" };
+        followup = {
+          needsFollowup: false,
+          followupQuestion: "",
+          reason: "budget_exhausted",
+        };
       } else {
         throw err;
       }

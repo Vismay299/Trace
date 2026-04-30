@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { getUserId } from "@/lib/auth";
-import { getOrCreateSession, currentQuestionFor } from "@/lib/interview/session";
+import {
+  getOrCreateSession,
+  currentQuestionFor,
+} from "@/lib/interview/session";
 import { InterviewChat } from "./_components/interview-chat";
 
 export const metadata = {

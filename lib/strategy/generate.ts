@@ -59,7 +59,9 @@ const strategySchema = z.object({
 
 export type GeneratedStrategy = z.infer<typeof strategySchema>;
 
-export async function generateStrategyDoc(userId: string): Promise<StrategyDoc> {
+export async function generateStrategyDoc(
+  userId: string,
+): Promise<StrategyDoc> {
   const [session] = await db
     .select()
     .from(interviewSessions)

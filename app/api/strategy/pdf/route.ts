@@ -58,14 +58,20 @@ export async function GET() {
   });
 }
 
-function strategyPdf(doc: NonNullable<Awaited<ReturnType<typeof getStrategy>>>) {
+function strategyPdf(
+  doc: NonNullable<Awaited<ReturnType<typeof getStrategy>>>,
+) {
   return React.createElement(
     Document,
     null,
     React.createElement(
       Page,
       { size: "LETTER", style: styles.page },
-      React.createElement(Text, { style: styles.title }, "Personal Brand Strategy"),
+      React.createElement(
+        Text,
+        { style: styles.title },
+        "Personal Brand Strategy",
+      ),
       React.createElement(
         Text,
         { style: styles.meta },
@@ -102,7 +108,10 @@ function section(title: string, values: Array<unknown>) {
     ...(clean.length ? clean : ["(empty)"]).map((value, index) =>
       React.createElement(
         Text,
-        { key: `${title}-${index}`, style: index === 0 ? styles.text : styles.item },
+        {
+          key: `${title}-${index}`,
+          style: index === 0 ? styles.text : styles.item,
+        },
         String(value),
       ),
     ),
@@ -112,7 +121,9 @@ function section(title: string, values: Array<unknown>) {
 function objectLines(value: Record<string, unknown> | null) {
   if (!value) return [];
   return Object.entries(value).map(([key, entry]) => {
-    const rendered = Array.isArray(entry) ? entry.join(", ") : String(entry ?? "");
+    const rendered = Array.isArray(entry)
+      ? entry.join(", ")
+      : String(entry ?? "");
     return `${key.replaceAll("_", " ")}: ${rendered}`;
   });
 }

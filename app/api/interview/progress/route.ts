@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/auth";
-import { getOrCreateSession, currentQuestionFor } from "@/lib/interview/session";
+import {
+  getOrCreateSession,
+  currentQuestionFor,
+} from "@/lib/interview/session";
 
 export const runtime = "nodejs";
 

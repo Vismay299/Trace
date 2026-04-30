@@ -38,7 +38,11 @@ export function VoiceFeedbackButtons({
   const tabs: { f: Feedback; label: string; Icon: typeof ThumbsUp }[] = [
     { f: "sounds_like_me", label: "Sounds like me", Icon: ThumbsUp },
     { f: "close_but_edited", label: "Close — I edited it", Icon: Pencil },
-    { f: "doesnt_sound_like_me", label: "Doesn't sound like me", Icon: ThumbsDown },
+    {
+      f: "doesnt_sound_like_me",
+      label: "Doesn't sound like me",
+      Icon: ThumbsDown,
+    },
   ];
 
   return (

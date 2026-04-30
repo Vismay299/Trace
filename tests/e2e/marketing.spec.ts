@@ -38,6 +38,14 @@ test.describe("Trace marketing site", () => {
   });
 
   test("handles waitlist validation and success", async ({ page }) => {
+    await page.route("**/api/waitlist", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, created: true }),
+      });
+    });
+
     await page.goto("/waitlist?tier=pro");
 
     await expect(page.getByText("Selected: Pro")).toBeVisible();

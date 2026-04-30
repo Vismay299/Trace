@@ -466,11 +466,11 @@ Update this table as each segment is completed. Format: ✅ done · 🔄 in prog
 | 18 | Voice calibration loop                                                   | ✅     | 2026-04-30     | Feedback, score, samples API, few-shot invalidation, and edit summary wired. |
 | 19 | Sample posts for free tier ("Aha" moment)                                | ✅     | 2026-04-30     | Strategy-triggered and standalone sample generation route wired. |
 | 20 | Weekly Check-In (text mode)                                              | ✅     | 2026-04-30     | Weekly check-in, adaptive follow-ups, completion, history/detail APIs wired. |
-| 21 | Voice mode for weekly check-in                                           | ⬜     |                |       |
-| 22 | Signal assessment + product stage classification                         | ⬜     |                |       |
-| 23 | Weekly Narrative Planner                                                 | ⬜     |                |       |
-| 24 | Plan-to-stories conversion                                               | ⬜     |                |       |
-| 25 | Low-Signal Mode                                                          | ⬜     |                |       |
-| 26 | Dashboard + AI budget indicator                                          | ⬜     |                |       |
-| 27 | Settings, data deletion, billing placeholder                             | ⬜     |                |       |
-| 28 | Phase 1 polish, tests, deploy                                            | ⬜     |                |       |
+| 21 | Voice mode for weekly check-in                                           | ✅     | 2026-04-30     | Voice default polished, input_mode persists across answers/follow-ups, fallback/read-aloud wired. |
+| 22 | Signal assessment + product stage classification                         | ✅     | 2026-04-30     | Combined Tier 3 signal/status service, cached API, deterministic fallback, and boundary tests. |
+| 23 | Weekly Narrative Planner                                                 | ✅     | 2026-04-30     | Tier 2 narrative planner, zod parser, APIs, editable plan UI, and tests wired. |
+| 24 | Plan-to-stories conversion                                               | ✅     | 2026-04-30     | Approved plans can promote selected recommendations into narrative_plan story seeds. |
+| 25 | Low-Signal Mode                                                          | ✅     | 2026-04-30     | Low-signal artifact-aware question generation, contextual banner, and zero-artifact fallback. |
+| 26 | Dashboard + AI budget indicator                                          | ✅     | 2026-04-30     | Dashboard stats, pillar chart, activity feed, and budget warning indicator wired. |
+| 27 | Settings, data deletion, billing placeholder                             | ✅     | 2026-04-30     | Profile edit, data counts, storage-aware hard delete, tier card, and Phase 2 integration placeholders. |
+| 28 | Phase 1 polish, tests, deploy                                            | ✅     | 2026-04-30     | Unit tests, skipped full-env golden path scaffold, README updates, lint/typecheck/build verified locally; production deploy remains environment-owned. |

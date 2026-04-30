@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import { getUserId } from "@/lib/auth";
 import { getOrCreateCheckin } from "@/lib/checkin/session";
-import { DEFAULT_CHECKIN_QUESTIONS } from "@/lib/checkin/questions";
+import { questionsForWeeklyCheckin } from "@/lib/checkin/low-signal-questions";
 import type { WeeklyCheckin } from "@/lib/db/schema";
+import { getSignalStatus } from "@/lib/ai/signal";
 import { CheckinChat } from "./_components/checkin-chat";
+import { SignalBanner } from "./_components/signal-banner";
 
 export const metadata = { title: "Weekly check-in" };
 
@@ -12,6 +14,11 @@ export default async function WeeklyPage() {
   if (!userId) redirect("/login?next=/weekly");
 
   const session = await getOrCreateCheckin(userId);
+  const signal = await getSignalStatus(userId);
+  const { questions, lowSignal } = await questionsForWeeklyCheckin(
+    userId,
+    signal,
+  );
 
   return (
     <section className="mx-auto max-w-3xl px-6 py-12">
@@ -26,11 +33,12 @@ export default async function WeeklyPage() {
         </p>
       </header>
 
+      <div className="mb-6">
+        <SignalBanner signal={signal} banner={lowSignal?.banner} />
+      </div>
+
       <CheckinChat
-        questions={DEFAULT_CHECKIN_QUESTIONS.map((q) => ({
-          id: q.id,
-          prompt: q.prompt,
-        }))}
+        questions={questions}
         initialAnswers={normalizeAnswers(session.answers)}
         initialIsComplete={session.isComplete}
         weekStartDate={session.weekStartDate}

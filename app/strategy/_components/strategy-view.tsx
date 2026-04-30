@@ -107,12 +107,14 @@ export function StrategyView({
             const topic = doc[`pillar${i}Topic` as keyof StrategyDoc] as
               | string
               | null;
-            const desc = doc[
-              `pillar${i}Description` as keyof StrategyDoc
-            ] as string | null;
+            const desc = doc[`pillar${i}Description` as keyof StrategyDoc] as
+              | string
+              | null;
             return (
               <li key={i}>
-                <p className="font-medium text-text">{i}. {topic}</p>
+                <p className="font-medium text-text">
+                  {i}. {topic}
+                </p>
                 <p className="text-text-muted">{desc}</p>
               </li>
             );
@@ -165,7 +167,9 @@ export function StrategyView({
         <dl className="grid gap-2 text-text">
           {Object.entries(doc.targetAudience ?? {}).map(([k, v]) => (
             <div key={k} className="grid grid-cols-3 gap-3">
-              <dt className="text-text-dim capitalize">{k.replaceAll("_", " ")}</dt>
+              <dt className="text-text-dim capitalize">
+                {k.replaceAll("_", " ")}
+              </dt>
               <dd className="col-span-2">
                 {Array.isArray(v) ? v.join(", ") : String(v ?? "")}
               </dd>
@@ -184,7 +188,9 @@ export function StrategyView({
         <dl className="grid gap-2 text-text">
           {Object.entries(doc.outcomeGoal ?? {}).map(([k, v]) => (
             <div key={k} className="grid grid-cols-3 gap-3">
-              <dt className="text-text-dim capitalize">{k.replaceAll("_", " ")}</dt>
+              <dt className="text-text-dim capitalize">
+                {k.replaceAll("_", " ")}
+              </dt>
               <dd className="col-span-2">{String(v ?? "")}</dd>
             </div>
           ))}
@@ -201,7 +207,9 @@ export function StrategyView({
         <dl className="grid gap-2 text-text">
           {Object.entries(doc.voiceProfile ?? {}).map(([k, v]) => (
             <div key={k} className="grid grid-cols-3 gap-3">
-              <dt className="text-text-dim capitalize">{k.replaceAll("_", " ")}</dt>
+              <dt className="text-text-dim capitalize">
+                {k.replaceAll("_", " ")}
+              </dt>
               <dd className="col-span-2">
                 {Array.isArray(v) ? v.join(", ") : String(v ?? "")}
               </dd>
@@ -235,8 +243,8 @@ export function StrategyView({
             </h2>
             <p className="text-text-muted">
               5 sample posts derived from your interview answers — no source
-              data yet. When you connect GitHub or upload files, every post
-              will cite a real artifact.
+              data yet. When you connect GitHub or upload files, every post will
+              cite a real artifact.
             </p>
           </header>
           <div className="grid gap-4 lg:grid-cols-2">

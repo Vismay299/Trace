@@ -2,11 +2,7 @@ import { redirect } from "next/navigation";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
 import { db } from "@/lib/db";
-import {
-  sourceChunks,
-  storySeeds,
-  strategyDocs,
-} from "@/lib/db/schema";
+import { sourceChunks, storySeeds, strategyDocs } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
 import { ExtractTrigger } from "./_components/extract-trigger";
 import { StoryCard } from "./_components/story-card";
@@ -64,8 +60,12 @@ export default async function MinePage({
     .from(sourceChunks)
     .where(eq(sourceChunks.userId, userId));
 
-  const pillars = [doc.pillar1Topic, doc.pillar2Topic, doc.pillar3Topic, "unmapped"]
-    .filter((p): p is string => Boolean(p));
+  const pillars = [
+    doc.pillar1Topic,
+    doc.pillar2Topic,
+    doc.pillar3Topic,
+    "unmapped",
+  ].filter((p): p is string => Boolean(p));
 
   return (
     <section className="mx-auto max-w-5xl px-6 py-12">
@@ -75,7 +75,8 @@ export default async function MinePage({
             Content Mine
           </h1>
           <p className="mt-2 text-text-muted">
-            Story seeds extracted from your real work. Each one cites its source.
+            Story seeds extracted from your real work. Each one cites its
+            source.
           </p>
         </div>
         <ExtractTrigger pendingChunks={pending ?? 0} />

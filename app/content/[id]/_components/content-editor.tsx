@@ -61,7 +61,12 @@ export function ContentEditor({
   const hooks = active.contentMetadata?.hooks ?? [];
   const isPickable = hooks.length > 0;
 
-  const formatTabs: ContentRow["format"][] = ["linkedin", "instagram", "x_thread", "substack"];
+  const formatTabs: ContentRow["format"][] = [
+    "linkedin",
+    "instagram",
+    "x_thread",
+    "substack",
+  ];
   const byFormat = useMemo(() => {
     const m = new Map<ContentRow["format"], ContentRow>();
     for (const r of [active, ...siblings]) {
@@ -298,7 +303,9 @@ export function ContentEditor({
   );
 }
 
-function isVoiceFeedbackValue(value: string | null): value is VoiceFeedbackValue {
+function isVoiceFeedbackValue(
+  value: string | null,
+): value is VoiceFeedbackValue {
   return (
     value === "sounds_like_me" ||
     value === "doesnt_sound_like_me" ||

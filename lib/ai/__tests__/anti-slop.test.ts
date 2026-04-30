@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  ANTI_SLOP_BLOCK,
-  BANNED_PATTERNS,
-  containsSlop,
-} from "../anti-slop";
+import { ANTI_SLOP_BLOCK, BANNED_PATTERNS, containsSlop } from "../anti-slop";
 
 describe("anti-slop banned patterns", () => {
   it("catches Hot take opener", () => {
@@ -13,7 +9,9 @@ describe("anti-slop banned patterns", () => {
   });
 
   it("catches Unpopular opinion opener", () => {
-    expect(containsSlop("Unpopular opinion: TypeScript is overrated.")).not.toEqual([]);
+    expect(
+      containsSlop("Unpopular opinion: TypeScript is overrated."),
+    ).not.toEqual([]);
   });
 
   it("catches I'm thrilled to announce", () => {
@@ -23,7 +21,9 @@ describe("anti-slop banned patterns", () => {
   });
 
   it("catches startup jargon", () => {
-    expect(containsSlop("We're disrupting the recruiting space.")).not.toEqual([]);
+    expect(containsSlop("We're disrupting the recruiting space.")).not.toEqual(
+      [],
+    );
   });
 
   it("catches engagement bait", () => {
@@ -43,7 +43,9 @@ describe("anti-slop banned patterns", () => {
   });
 
   it("allows real ALL-CAPS acronyms", () => {
-    expect(containsSlop("Built an API for our SaaS using JSON over HTTPS.")).toEqual([]);
+    expect(
+      containsSlop("Built an API for our SaaS using JSON over HTTPS."),
+    ).toEqual([]);
   });
 
   it("flags actual all-caps shouting", () => {
@@ -52,11 +54,14 @@ describe("anti-slop banned patterns", () => {
 
   it("normalizes curly quotes", () => {
     expect(containsSlop("“Unpopular opinion”: nope.")).toEqual([]); // not the actual pattern
-    expect(containsSlop("Unpopular opinion— stop using mocks.")).not.toEqual([]);
+    expect(containsSlop("Unpopular opinion— stop using mocks.")).not.toEqual(
+      [],
+    );
   });
 
   it("flags 5+ consecutive ultra-short lines (LinkedIn-bro spacing)", () => {
-    const text = "We launched.\n\nIt was fun.\n\nIt grew.\n\nIt scaled.\n\nIt was nice.\n\nKeep building.";
+    const text =
+      "We launched.\n\nIt was fun.\n\nIt grew.\n\nIt scaled.\n\nIt was nice.\n\nKeep building.";
     expect(containsSlop(text)).not.toEqual([]);
   });
 

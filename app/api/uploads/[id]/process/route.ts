@@ -47,7 +47,9 @@ export async function POST(
     const bytes = await getObject(upload.storageKey);
     const parsed = await parseFile(bytes, upload.filename);
     const chunks = chunkText(parsed.text, upload.filename);
-    await db.delete(sourceChunks).where(eq(sourceChunks.uploadedFileId, upload.id));
+    await db
+      .delete(sourceChunks)
+      .where(eq(sourceChunks.uploadedFileId, upload.id));
 
     if (chunks.length) {
       const now = new Date();

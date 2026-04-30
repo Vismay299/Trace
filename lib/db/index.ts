@@ -12,11 +12,14 @@ function buildClient() {
   if (!url && !isNextBuild()) {
     throw new Error("DATABASE_URL is not set. See .env.example.");
   }
-  return postgres(url ?? "postgres://postgres:postgres@127.0.0.1:5432/trace_build", {
-    max: 10,
-    idle_timeout: 20,
-    prepare: false,
-  });
+  return postgres(
+    url ?? "postgres://postgres:postgres@127.0.0.1:5432/trace_build",
+    {
+      max: 10,
+      idle_timeout: 20,
+      prepare: false,
+    },
+  );
 }
 
 function isNextBuild() {

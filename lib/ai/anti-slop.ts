@@ -11,11 +11,7 @@
  * ellipses on input to keep these patterns simple.
  */
 
-export type BannedCategory =
-  | "hook"
-  | "format"
-  | "content"
-  | "voice_builder";
+export type BannedCategory = "hook" | "format" | "content" | "voice_builder";
 
 export type BannedPattern = {
   category: BannedCategory;
@@ -97,24 +93,28 @@ export const BANNED_PATTERNS: BannedPattern[] = [
   },
   {
     category: "content",
-    label: 'Startup jargon ("disrupting", "leveraging synergies", "paradigm shift")',
+    label:
+      'Startup jargon ("disrupting", "leveraging synergies", "paradigm shift")',
     regex:
       /\b(disrupting (the )?[a-z\- ]{2,30} space|leveraging synergies|paradigm shift)\b/i,
   },
   {
     category: "content",
-    label: 'Corporate announcement ("I\'m thrilled to announce", "Excited to share")',
-    regex: /\b(i'?m thrilled to (announce|share)|excited to (announce|share))\b/i,
+    label:
+      'Corporate announcement ("I\'m thrilled to announce", "Excited to share")',
+    regex:
+      /\b(i'?m thrilled to (announce|share)|excited to (announce|share))\b/i,
   },
   {
     category: "content",
-    label: "Inspirational close (\"Keep building\", \"The grind never stops\", \"You got this\")",
+    label:
+      'Inspirational close ("Keep building", "The grind never stops", "You got this")',
     regex:
       /\b(keep (building|shipping|grinding)\.?\s*[❤🚀💪]?|the grind never stops|you got this)\b/i,
   },
   {
     category: "content",
-    label: "Motivational platitude (\"Success is a journey, not a destination\")",
+    label: 'Motivational platitude ("Success is a journey, not a destination")',
     regex: /\bsuccess is a journey,?\s*not a destination\b/i,
   },
   {
@@ -143,7 +143,8 @@ export const BANNED_PATTERNS: BannedPattern[] = [
   {
     category: "voice_builder",
     label: '"10x developer" / hustle culture language',
-    regex: /\b10x (developer|engineer)\b|\bhustle culture\b|\brise and grind\b/i,
+    regex:
+      /\b10x (developer|engineer)\b|\bhustle culture\b|\brise and grind\b/i,
   },
 ];
 

@@ -14,7 +14,10 @@ describe("chunkText", () => {
   });
 
   it("splits long input into multiple chunks", () => {
-    const big = Array.from({ length: 60 }, (_, i) => `Paragraph ${i}: ${"word ".repeat(40)}`).join("\n\n");
+    const big = Array.from(
+      { length: 60 },
+      (_, i) => `Paragraph ${i}: ${"word ".repeat(40)}`,
+    ).join("\n\n");
     const chunks = chunkText(big, "doc");
     expect(chunks.length).toBeGreaterThan(1);
     for (const c of chunks) {

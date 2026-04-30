@@ -29,7 +29,11 @@ export async function maybeAskFollowUp(opts: {
     };
   }
   if (wordCount > 120) {
-    return { needsFollowup: false, followupQuestion: "", reason: "Answer is rich." };
+    return {
+      needsFollowup: false,
+      followupQuestion: "",
+      reason: "Answer is rich.",
+    };
   }
 
   const prompt = loadPrompt("interview-followup", {

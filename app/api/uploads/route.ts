@@ -40,7 +40,10 @@ export async function POST(req: Request) {
   }
   const file = form.get("file");
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: "Missing 'file' field." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing 'file' field." },
+      { status: 400 },
+    );
   }
 
   try {
@@ -55,8 +58,15 @@ export async function POST(req: Request) {
   } catch (err) {
     if (err instanceof UploadError) {
       const status =
-        err.code === "QUOTA" ? 409 : err.code === "BAD_TYPE" || err.code === "TOO_LARGE" ? 400 : 500;
-      return NextResponse.json({ error: err.message, code: err.code }, { status });
+        err.code === "QUOTA"
+          ? 409
+          : err.code === "BAD_TYPE" || err.code === "TOO_LARGE"
+            ? 400
+            : 500;
+      return NextResponse.json(
+        { error: err.message, code: err.code },
+        { status },
+      );
     }
     console.error("[uploads] failed", err);
     return NextResponse.json(

@@ -48,11 +48,7 @@ export async function getCached<T>(opts: CacheGetOpts<T>): Promise<T> {
     eq(cacheEntries.keyHash, keyHash),
   );
 
-  const [hit] = await db
-    .select()
-    .from(cacheEntries)
-    .where(where)
-    .limit(1);
+  const [hit] = await db.select().from(cacheEntries).where(where).limit(1);
 
   if (hit && (hit.expiresAt == null || hit.expiresAt > now)) {
     return hit.value as T;
@@ -72,7 +68,11 @@ export async function getCached<T>(opts: CacheGetOpts<T>): Promise<T> {
       expiresAt,
     })
     .onConflictDoUpdate({
-      target: [cacheEntries.userId, cacheEntries.namespace, cacheEntries.keyHash],
+      target: [
+        cacheEntries.userId,
+        cacheEntries.namespace,
+        cacheEntries.keyHash,
+      ],
       set: {
         value: value as unknown,
         expiresAt,

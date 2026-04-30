@@ -11,6 +11,7 @@ import {
   UnsupportedBrowserBanner,
   useInputMode,
 } from "@/components/voice/mode-toggle";
+import { useTTS } from "@/hooks/use-tts";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 
 type Question = { id: string; prompt: string };
@@ -33,8 +34,11 @@ export function CheckinChat({
   weekStartDate: string;
 }) {
   const router = useRouter();
-  const [answers, setAnswers] = useState<Record<string, AnswerEntry>>(initialAnswers);
-  const [activeId, setActiveId] = useState<string>(() => firstUnanswered(questions, initialAnswers));
+  const [answers, setAnswers] =
+    useState<Record<string, AnswerEntry>>(initialAnswers);
+  const [activeId, setActiveId] = useState<string>(() =>
+    firstUnanswered(questions, initialAnswers),
+  );
   const [pendingFollowup, setPendingFollowup] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +50,7 @@ export function CheckinChat({
   const [isComplete, setIsComplete] = useState(initialIsComplete);
 
   const [mode, setMode] = useInputMode("voice");
+  const [readAloud, setReadAloud] = useState(false);
   const {
     supported,
     isListening,
@@ -57,6 +62,12 @@ export function CheckinChat({
     reset: resetVoice,
     setTranscript,
   } = useVoiceInput();
+  const {
+    speak,
+    cancel: stopSpeaking,
+    setEnabled: setTtsEnabled,
+    supported: ttsSupported,
+  } = useTTS();
 
   useEffect(() => {
     if (!supported && mode === "voice") setMode("text");
@@ -66,7 +77,23 @@ export function CheckinChat({
     if (mode === "voice") setText(transcript);
   }, [transcript, mode]);
 
-  const activeQuestion = questions.find((q) => q.id === activeId) ?? questions[0];
+  useEffect(() => {
+    setTtsEnabled(readAloud);
+    if (readAloud && pendingFollowup && ttsSupported) {
+      speak(pendingFollowup, true);
+    }
+    return () => stopSpeaking();
+  }, [
+    pendingFollowup,
+    readAloud,
+    setTtsEnabled,
+    speak,
+    stopSpeaking,
+    ttsSupported,
+  ]);
+
+  const activeQuestion =
+    questions.find((q) => q.id === activeId) ?? questions[0];
   const answeredCount = Object.keys(answers).length;
 
   const submit = async (isFollowupReply: boolean, skipFollowup = false) => {
@@ -82,6 +109,7 @@ export function CheckinChat({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           questionId: activeQuestion.id,
+          questionPrompt: activeQuestion.prompt,
           answer: text,
           inputMode: mode,
           isFollowupReply,
@@ -157,26 +185,37 @@ export function CheckinChat({
       <div className="flex items-center justify-between">
         <p className="text-xs uppercase tracking-[0.18em] text-text-dim">
           Week of {new Date(weekStartDate).toLocaleDateString()}
-          {" · "}
-          {answeredCount}/{questions.length} answered
         </p>
         <ModeToggle mode={mode} onChange={setMode} voiceSupported={supported} />
       </div>
 
+      {!supported && <UnsupportedBrowserBanner />}
+
       {pendingFollowup ? (
         <div className="rounded-card border border-accent/30 bg-accent-soft p-5">
-          <p className="mb-2 text-xs uppercase tracking-[0.18em] text-accent">
-            Follow-up
-          </p>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-[0.18em] text-accent">
+              Follow-up
+            </p>
+            {ttsSupported && (
+              <button
+                type="button"
+                onClick={() => setReadAloud((v) => !v)}
+                className="text-xs text-text-muted hover:text-accent"
+              >
+                {readAloud ? "Read-aloud on" : "Read aloud"}
+              </button>
+            )}
+          </div>
           <p className="text-lg text-text">{pendingFollowup}</p>
         </div>
       ) : (
         <div className="rounded-card border border-border-strong bg-bg-elev p-6">
-          <p className="text-lg leading-snug text-text">{activeQuestion.prompt}</p>
+          <p className="text-lg leading-snug text-text">
+            {activeQuestion.prompt}
+          </p>
         </div>
       )}
-
-      {!supported && mode === "voice" && <UnsupportedBrowserBanner />}
 
       {mode === "voice" && supported ? (
         <div className="space-y-3">
@@ -215,7 +254,11 @@ export function CheckinChat({
           disabled={submitting || !text.trim()}
           size="lg"
         >
-          {submitting ? "Saving…" : pendingFollowup ? "Send follow-up" : "Submit & next"}
+          {submitting
+            ? "Saving…"
+            : pendingFollowup
+              ? "Send follow-up"
+              : "Submit & next"}
         </Button>
         {!pendingFollowup && (
           <Button
@@ -242,10 +285,10 @@ export function CheckinChat({
 
       <details className="rounded-card border border-border-strong bg-bg-elev p-4">
         <summary className="cursor-pointer text-sm text-text-muted">
-          Edit a previous answer ({answeredCount}/{questions.length})
+          Edit a previous answer ({answeredCount} saved)
         </summary>
         <ul className="mt-3 space-y-2">
-          {questions.map((q, i) => {
+          {questions.map((q) => {
             const a = answers[q.id];
             return (
               <li key={q.id} className="text-sm">
@@ -258,11 +301,11 @@ export function CheckinChat({
                   }}
                   className="text-left hover:text-accent"
                 >
-                  <span className="text-text-dim">Q{i + 1}.</span>{" "}
                   <span className="text-text">{q.prompt}</span>
                   {a?.answer && (
                     <span className="ml-2 text-text-dim italic">
-                      “{a.answer.slice(0, 60)}{a.answer.length > 60 ? "…" : ""}”
+                      “{a.answer.slice(0, 60)}
+                      {a.answer.length > 60 ? "…" : ""}”
                     </span>
                   )}
                 </button>
@@ -277,20 +320,22 @@ export function CheckinChat({
           Where are you in the journey?
         </p>
         <div className="flex flex-wrap gap-2">
-          {(["building", "launching", "operating", "scaling"] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setProductStage(s)}
-              className={`rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.18em] transition ${
-                productStage === s
-                  ? "border-accent bg-accent text-black"
-                  : "border-border-strong text-text-muted hover:border-accent"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
+          {(["building", "launching", "operating", "scaling"] as const).map(
+            (s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setProductStage(s)}
+                className={`rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.18em] transition ${
+                  productStage === s
+                    ? "border-accent bg-accent text-black"
+                    : "border-border-strong text-text-muted hover:border-accent"
+                }`}
+              >
+                {s}
+              </button>
+            ),
+          )}
         </div>
         <Button onClick={onComplete} disabled={completing || !allAnswered}>
           {completing

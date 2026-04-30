@@ -34,6 +34,9 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const updated = await completeCheckin(userId, parsed.data.productStage ?? null);
+  const updated = await completeCheckin(
+    userId,
+    parsed.data.productStage ?? null,
+  );
   return NextResponse.json({ ok: true, checkin: updated });
 }

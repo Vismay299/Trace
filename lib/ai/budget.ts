@@ -87,12 +87,18 @@ export async function getOrCreateBudget(
   return row;
 }
 
-const TIER_USED_COL: Record<Tier, "tier1RequestsUsed" | "tier2RequestsUsed" | "tier3RequestsUsed"> = {
+const TIER_USED_COL: Record<
+  Tier,
+  "tier1RequestsUsed" | "tier2RequestsUsed" | "tier3RequestsUsed"
+> = {
   1: "tier1RequestsUsed",
   2: "tier2RequestsUsed",
   3: "tier3RequestsUsed",
 };
-const TIER_LIMIT_COL: Record<Tier, "tier1RequestsLimit" | "tier2RequestsLimit" | "tier3RequestsLimit"> = {
+const TIER_LIMIT_COL: Record<
+  Tier,
+  "tier1RequestsLimit" | "tier2RequestsLimit" | "tier3RequestsLimit"
+> = {
   1: "tier1RequestsLimit",
   2: "tier2RequestsLimit",
   3: "tier3RequestsLimit",
@@ -149,10 +155,7 @@ export async function checkAndDecrement(
 }
 
 /** Refund 1 unit on transport failure so users aren't charged for our bugs. */
-export async function refundBudget(
-  userId: string,
-  tier: Tier,
-): Promise<void> {
+export async function refundBudget(userId: string, tier: Tier): Promise<void> {
   const usedKey = TIER_USED_COL[tier];
   const usedCol = sql.identifier(snakeCase(usedKey));
   await db.execute(sql`

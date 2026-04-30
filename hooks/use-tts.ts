@@ -11,14 +11,12 @@ export function useTTS() {
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
-    setSupported(
-      typeof window !== "undefined" && "speechSynthesis" in window,
-    );
+    setSupported(typeof window !== "undefined" && "speechSynthesis" in window);
   }, []);
 
   const speak = useCallback(
-    (text: string) => {
-      if (!supported || !enabled) return;
+    (text: string, force = false) => {
+      if (!supported || (!enabled && !force)) return;
       try {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);

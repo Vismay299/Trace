@@ -18,7 +18,11 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await ctx.params;
-  const [row] = await db.select().from(storySeeds).where(eq(storySeeds.id, id)).limit(1);
+  const [row] = await db
+    .select()
+    .from(storySeeds)
+    .where(eq(storySeeds.id, id))
+    .limit(1);
   if (!row || row.userId !== userId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -48,10 +52,18 @@ export async function PATCH(
   if (!parsed.success) {
     return NextResponse.json({ error: "Validation failed" }, { status: 400 });
   }
-  const [existing] = await db.select().from(storySeeds).where(eq(storySeeds.id, id)).limit(1);
+  const [existing] = await db
+    .select()
+    .from(storySeeds)
+    .where(eq(storySeeds.id, id))
+    .limit(1);
   if (!existing || existing.userId !== userId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  const [updated] = await db.update(storySeeds).set(parsed.data).where(eq(storySeeds.id, id)).returning();
+  const [updated] = await db
+    .update(storySeeds)
+    .set(parsed.data)
+    .where(eq(storySeeds.id, id))
+    .returning();
   return NextResponse.json({ seed: updated });
 }

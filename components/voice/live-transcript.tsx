@@ -38,7 +38,10 @@ export function LiveTranscript({
       )}
       {isListening && (
         <div className="mt-2 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-accent">
-          <span className="size-2 animate-pulse rounded-full bg-accent" aria-hidden />
+          <span
+            className="size-2 animate-pulse rounded-full bg-accent"
+            aria-hidden
+          />
           Listening — pauses for 2.5s auto-stop
         </div>
       )}

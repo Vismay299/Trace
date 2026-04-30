@@ -138,7 +138,9 @@ export async function generateSamplePosts(
   return inserted;
 }
 
-function renderSampleContent(s: z.infer<typeof sampleSchema>["samples"][number]): string {
+function renderSampleContent(
+  s: z.infer<typeof sampleSchema>["samples"][number],
+): string {
   if (s.format === "x_thread" && s.tweets) {
     return s.tweets
       .sort((a, b) => a.index - b.index)
@@ -148,7 +150,10 @@ function renderSampleContent(s: z.infer<typeof sampleSchema>["samples"][number])
   if (s.format === "instagram" && s.slides) {
     return s.slides
       .sort((a, b) => a.index - b.index)
-      .map((sl) => `Slide ${sl.index}: ${sl.text}${sl.design_note ? ` [${sl.design_note}]` : ""}`)
+      .map(
+        (sl) =>
+          `Slide ${sl.index}: ${sl.text}${sl.design_note ? ` [${sl.design_note}]` : ""}`,
+      )
       .join("\n\n");
   }
   const hook = s.hooks?.[0] ?? "";

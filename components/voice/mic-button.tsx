@@ -32,7 +32,10 @@ export function MicButton({
     >
       {isListening ? (
         <>
-          <Loader2 className="absolute size-14 animate-spin opacity-30" aria-hidden />
+          <Loader2
+            className="absolute size-14 animate-spin opacity-30"
+            aria-hidden
+          />
           <MicOff className="size-5" aria-hidden />
         </>
       ) : (

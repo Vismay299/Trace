@@ -56,7 +56,10 @@ export async function extractStorySeeds(userId: string): Promise<StorySeed[]> {
   if (!chunks.length) return [];
 
   const existing = await db
-    .select({ title: storySeeds.title, sourceChunkId: storySeeds.sourceChunkId })
+    .select({
+      title: storySeeds.title,
+      sourceChunkId: storySeeds.sourceChunkId,
+    })
     .from(storySeeds)
     .where(eq(storySeeds.userId, userId));
 
@@ -65,10 +68,7 @@ export async function extractStorySeeds(userId: string): Promise<StorySeed[]> {
 
   const fresh = chunks.filter((c) => !seenChunkIds.has(c.id));
   if (!fresh.length) {
-    return db
-      .select()
-      .from(storySeeds)
-      .where(eq(storySeeds.userId, userId));
+    return db.select().from(storySeeds).where(eq(storySeeds.userId, userId));
   }
 
   const prompt = loadPrompt("story-extraction", {
@@ -129,20 +129,24 @@ export async function extractStorySeeds(userId: string): Promise<StorySeed[]> {
     );
   }
 
-  return db
-    .select()
-    .from(storySeeds)
-    .where(eq(storySeeds.userId, userId));
+  return db.select().from(storySeeds).where(eq(storySeeds.userId, userId));
 }
 
 function normalizePillar(
   raw: string,
-  doc: { pillar1Topic: string | null; pillar2Topic: string | null; pillar3Topic: string | null },
+  doc: {
+    pillar1Topic: string | null;
+    pillar2Topic: string | null;
+    pillar3Topic: string | null;
+  },
 ): string {
   const lower = raw.toLowerCase();
-  if (lower.includes("pillar_1") || lower === doc.pillar1Topic?.toLowerCase()) return doc.pillar1Topic ?? "pillar_1";
-  if (lower.includes("pillar_2") || lower === doc.pillar2Topic?.toLowerCase()) return doc.pillar2Topic ?? "pillar_2";
-  if (lower.includes("pillar_3") || lower === doc.pillar3Topic?.toLowerCase()) return doc.pillar3Topic ?? "pillar_3";
+  if (lower.includes("pillar_1") || lower === doc.pillar1Topic?.toLowerCase())
+    return doc.pillar1Topic ?? "pillar_1";
+  if (lower.includes("pillar_2") || lower === doc.pillar2Topic?.toLowerCase())
+    return doc.pillar2Topic ?? "pillar_2";
+  if (lower.includes("pillar_3") || lower === doc.pillar3Topic?.toLowerCase())
+    return doc.pillar3Topic ?? "pillar_3";
   return "unmapped";
 }
 

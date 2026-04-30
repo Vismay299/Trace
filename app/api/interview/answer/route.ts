@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUserId } from "@/lib/auth";
 import { findQuestion } from "@/lib/interview/questions";
-import { saveAnswer, currentQuestionFor, getOrCreateSession } from "@/lib/interview/session";
+import {
+  saveAnswer,
+  currentQuestionFor,
+  getOrCreateSession,
+} from "@/lib/interview/session";
 import { maybeAskFollowUp } from "@/lib/interview/followup";
 import { AIBudgetExhaustedError } from "@/lib/ai/types";
 
@@ -41,11 +45,17 @@ export async function POST(req: Request) {
   }
 
   const q = findQuestion(parsed.data.questionId);
-  if (!q) return NextResponse.json({ error: "Unknown question" }, { status: 400 });
+  if (!q)
+    return NextResponse.json({ error: "Unknown question" }, { status: 400 });
 
   // If this is a follow-up reply, append to the existing entry rather than replacing.
   const session = await getOrCreateSession(userId);
-  const existing = ((session.answers ?? {}) as Record<string, { answer: string; followups?: string[]; mode?: "text" | "voice" }>)[q.id];
+  const existing = (
+    (session.answers ?? {}) as Record<
+      string,
+      { answer: string; followups?: string[]; mode?: "text" | "voice" }
+    >
+  )[q.id];
   let entry: { answer: string; followups?: string[]; mode?: "text" | "voice" };
   if (parsed.data.isFollowupReply && existing) {
     entry = {
@@ -63,7 +73,11 @@ export async function POST(req: Request) {
 
   // Decide whether to ask a follow-up. Skip if user opted out, this was already
   // a follow-up reply, or the question disallows follow-ups.
-  let followup: { needsFollowup: boolean; followupQuestion: string; reason: string } = {
+  let followup: {
+    needsFollowup: boolean;
+    followupQuestion: string;
+    reason: string;
+  } = {
     needsFollowup: false,
     followupQuestion: "",
     reason: "skipped",

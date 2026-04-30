@@ -60,7 +60,11 @@ export async function POST(
   } catch (err) {
     if (err instanceof AIBudgetExhaustedError) {
       return NextResponse.json(
-        { error: "AI_BUDGET_EXHAUSTED", message: err.message, periodEnd: err.periodEnd },
+        {
+          error: "AI_BUDGET_EXHAUSTED",
+          message: err.message,
+          periodEnd: err.periodEnd,
+        },
         { status: 429 },
       );
     }

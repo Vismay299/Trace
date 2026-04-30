@@ -6,7 +6,11 @@
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { sourceChunks, uploadedFiles } from "@/lib/db/schema";
-import { fileTypeOf, isAllowedExtension, parseFile } from "@/lib/integrations/parser";
+import {
+  fileTypeOf,
+  isAllowedExtension,
+  parseFile,
+} from "@/lib/integrations/parser";
 import { chunkText } from "@/lib/integrations/chunker";
 import { deleteObject, objectKeyFor, putObject } from "@/lib/storage/supabase";
 
@@ -68,7 +72,11 @@ export async function ingestUpload(
     .returning();
 
   try {
-    await putObject(storageKey, file.bytes, file.type || "application/octet-stream");
+    await putObject(
+      storageKey,
+      file.bytes,
+      file.type || "application/octet-stream",
+    );
     const parsed = await parseFile(file.bytes, file.name);
     const chunks = chunkText(parsed.text, file.name);
 
@@ -130,7 +138,9 @@ export async function deleteUpload(userId: string, uploadId: string) {
   if (!row || row.userId !== userId) {
     throw new UploadError("NOT_FOUND", "Upload not found.");
   }
-  await db.delete(sourceChunks).where(eq(sourceChunks.uploadedFileId, uploadId));
+  await db
+    .delete(sourceChunks)
+    .where(eq(sourceChunks.uploadedFileId, uploadId));
   await db.delete(uploadedFiles).where(eq(uploadedFiles.id, uploadId));
   await deleteObject(row.storageKey).catch(() => {});
 }

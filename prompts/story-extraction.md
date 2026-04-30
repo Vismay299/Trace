@@ -5,6 +5,7 @@ task_type: story_extraction
 tier: 2
 description: Extract content-worthy story seeds from a batch of source chunks.
 ---
+
 ROLE
 You are mining the user's real work for stories worth telling. You are NOT writing
 content yet — you are surfacing the moments where a builder did something specific,
@@ -14,6 +15,7 @@ CONTEXT
 User: {{userName}}
 
 Strategy Doc pillars:
+
 1. {{pillar1Topic}} — {{pillar1Description}}
 2. {{pillar2Topic}} — {{pillar2Description}}
 3. {{pillar3Topic}} — {{pillar3Description}}
@@ -30,20 +32,21 @@ TASK
 Return JSON:
 
 {
-  "seeds": [
-    {
-      "source_chunk_id": "<the id of the chunk this story came from>",
-      "title": "Short, specific title — names a real thing the user did.",
-      "summary": "2-3 sentences: the moment, the decision, the consequence. Real details only.",
-      "pillar_match": "pillar_1 | pillar_2 | pillar_3 | unmapped",
-      "story_type": "origin | build_decision | mistake_lesson | user_insight | product_pov | launch_distribution | proof",
-      "relevance_score": 0.0-1.0,
-      "source_citation": "Based on {source_reference}, {Mon YYYY}"
-    }
-  ]
+"seeds": [
+{
+"source_chunk_id": "<the id of the chunk this story came from>",
+"title": "Short, specific title — names a real thing the user did.",
+"summary": "2-3 sentences: the moment, the decision, the consequence. Real details only.",
+"pillar_match": "pillar_1 | pillar_2 | pillar_3 | unmapped",
+"story_type": "origin | build_decision | mistake_lesson | user_insight | product_pov | launch_distribution | proof",
+"relevance_score": 0.0-1.0,
+"source_citation": "Based on {source_reference}, {Mon YYYY}"
+}
+]
 }
 
 RULES
+
 - Extract 0-3 seeds per chunk. Many chunks have nothing worth telling.
 - A seed must reference a specific decision, number, tool, person, or tradeoff. If
   the chunk is generic, return no seeds for it.

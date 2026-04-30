@@ -73,7 +73,10 @@ export async function runAntiSlop(
 }
 
 export type GenerateWithSlopRetriesOpts<T> = {
-  generate: (attempt: number, lastViolations?: SlopViolation[]) => Promise<{
+  generate: (
+    attempt: number,
+    lastViolations?: SlopViolation[],
+  ) => Promise<{
     content: string;
     raw: T;
   }>;

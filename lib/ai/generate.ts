@@ -235,12 +235,16 @@ function extractCheckableText(format: ContentFormat, raw: unknown): string {
   if (format === "instagram") {
     const slides = (r.slides as { text: string }[]) ?? [];
     const hooks = (r.hooks as string[]) ?? [];
-    return [hooks.join("\n"), slides.map((s) => s.text).join("\n"), r.caption].filter(Boolean).join("\n\n");
+    return [hooks.join("\n"), slides.map((s) => s.text).join("\n"), r.caption]
+      .filter(Boolean)
+      .join("\n\n");
   }
   if (format === "x_thread") {
     const tweets = (r.tweets as { text: string }[]) ?? [];
     const hooks = (r.hooks as string[]) ?? [];
-    return [hooks.join("\n"), tweets.map((t) => t.text).join("\n")].join("\n\n");
+    return [hooks.join("\n"), tweets.map((t) => t.text).join("\n")].join(
+      "\n\n",
+    );
   }
   if (format === "substack") {
     return [r.title, r.subtitle, r.body].filter(Boolean).join("\n\n") as string;
@@ -316,7 +320,9 @@ function renderForFormat(format: ContentFormat, r: GeneratedRaw): string {
     return ordered.map((t, i) => `${i + 1}/ ${t.text}`).join("\n\n");
   }
   if (format === "instagram") {
-    const slides = (r.slides as { index: number; text: string; design_note?: string }[]) ?? [];
+    const slides =
+      (r.slides as { index: number; text: string; design_note?: string }[]) ??
+      [];
     const ordered = [...slides].sort((a, b) => a.index - b.index);
     const body = ordered
       .map(
@@ -341,7 +347,11 @@ function renderForFormat(format: ContentFormat, r: GeneratedRaw): string {
   return "";
 }
 
-async function loadSourceContext(seed: { sourceChunkId: string | null; summary: string | null; title: string }): Promise<string> {
+async function loadSourceContext(seed: {
+  sourceChunkId: string | null;
+  summary: string | null;
+  title: string;
+}): Promise<string> {
   if (seed.sourceChunkId) {
     const [chunk] = await db
       .select()

@@ -19,7 +19,7 @@ export function ExtractTrigger({ pendingChunks }: { pendingChunks: number }) {
         setError(
           data?.error === "AI_BUDGET_EXHAUSTED"
             ? `Out of weekly AI credits. Resets ${data.periodEnd}.`
-            : data?.error ?? "Extraction failed.",
+            : (data?.error ?? "Extraction failed."),
         );
         return;
       }

@@ -26,15 +26,16 @@ const credentialsSchema = z.object({
   password: z.string().min(8),
 });
 
+const adapterDb = db as unknown as Parameters<typeof DrizzleAdapter>[0];
+const adapterTables = {
+  usersTable: users,
+  accountsTable: accounts,
+  sessionsTable: sessions,
+  verificationTokensTable: verificationTokens,
+} as unknown as Parameters<typeof DrizzleAdapter>[1];
+
 export const authConfig: NextAuthConfig = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  adapter: DrizzleAdapter(db as any, {
-    usersTable: users,
-    accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any),
+  adapter: DrizzleAdapter(adapterDb, adapterTables),
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   trustHost: true,
@@ -53,7 +54,10 @@ export const authConfig: NextAuthConfig = {
           .where(eq(users.email, parsed.data.email))
           .limit(1);
         if (!user?.passwordHash) return null;
-        const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
+        const ok = await bcrypt.compare(
+          parsed.data.password,
+          user.passwordHash,
+        );
         if (!ok) return null;
         return {
           id: user.id,

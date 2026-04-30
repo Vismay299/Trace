@@ -33,7 +33,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
         });
         if (!res.ok) {
           const data = await res.json().catch(() => null);
-          setError(data?.error ?? "Something went wrong creating your account.");
+          setError(
+            data?.error ?? "Something went wrong creating your account.",
+          );
           setIsLoading(false);
           return;
         }
@@ -88,7 +90,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <Input
             id="password"
             type="password"
-            autoComplete={mode === "signup" ? "new-password" : "current-password"}
+            autoComplete={
+              mode === "signup" ? "new-password" : "current-password"
+            }
             required
             minLength={8}
             value={password}

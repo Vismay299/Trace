@@ -13,7 +13,15 @@ export type ParsedFile = {
 };
 
 const TEXT_LIKE_EXT = new Set([".txt", ".md", ".markdown"]);
-const ALLOWED = new Set([".pdf", ".docx", ".txt", ".md", ".markdown", ".csv", ".json"]);
+const ALLOWED = new Set([
+  ".pdf",
+  ".docx",
+  ".txt",
+  ".md",
+  ".markdown",
+  ".csv",
+  ".json",
+]);
 
 export function fileTypeOf(filename: string): ParsedFile["fileType"] {
   const ext = path.extname(filename).toLowerCase();
@@ -58,7 +66,8 @@ export async function parseFile(
   if (TEXT_LIKE_EXT.has(ext)) {
     return {
       text: buffer.toString("utf8").trim(),
-      mime: ext === ".md" || ext === ".markdown" ? "text/markdown" : "text/plain",
+      mime:
+        ext === ".md" || ext === ".markdown" ? "text/markdown" : "text/plain",
       fileType: ext === ".md" || ext === ".markdown" ? "md" : "txt",
     };
   }
@@ -78,7 +87,9 @@ function validateMagicBytes(buffer: Buffer, ext: string) {
   if (ext === ".docx") {
     const isZip = buffer[0] === 0x50 && buffer[1] === 0x4b;
     if (!isZip) {
-      throw new Error("File extension is DOCX, but the file header is not a DOCX/ZIP container.");
+      throw new Error(
+        "File extension is DOCX, but the file header is not a DOCX/ZIP container.",
+      );
     }
   }
   if ([".txt", ".md", ".markdown", ".csv", ".json"].includes(ext)) {

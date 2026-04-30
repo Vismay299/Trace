@@ -25,7 +25,11 @@ describe("budget helpers", () => {
   });
 
   it("pro and studio scale up", () => {
-    expect(defaultLimitsFor("pro")[1]).toBeGreaterThan(defaultLimitsFor("free")[1]);
-    expect(defaultLimitsFor("studio")[1]).toBeGreaterThan(defaultLimitsFor("pro")[1]);
+    expect(defaultLimitsFor("pro")[1]).toBeGreaterThan(
+      defaultLimitsFor("free")[1],
+    );
+    expect(defaultLimitsFor("studio")[1]).toBeGreaterThan(
+      defaultLimitsFor("pro")[1],
+    );
   });
 });

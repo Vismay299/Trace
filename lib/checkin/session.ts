@@ -22,7 +22,9 @@ export type CheckinAnswerEntry = {
   mode?: "text" | "voice";
 };
 
-export async function getOrCreateCheckin(userId: string): Promise<WeeklyCheckin> {
+export async function getOrCreateCheckin(
+  userId: string,
+): Promise<WeeklyCheckin> {
   const week = currentWeekStart();
   const [existing] = await db
     .select()
@@ -72,6 +74,7 @@ export async function appendFollowupReply(
   userId: string,
   qid: string,
   reply: string,
+  mode: "text" | "voice" = "text",
 ): Promise<WeeklyCheckin> {
   const session = await getOrCreateCheckin(userId);
   const answers = (session.answers ?? {}) as Record<string, CheckinAnswerEntry>;
@@ -80,9 +83,11 @@ export async function appendFollowupReply(
     ...existing,
     followups: [...(existing.followups ?? []), reply],
   };
+  const inputMode =
+    mode === "voice" || session.inputMode === "voice" ? "voice" : "text";
   const [updated] = await db
     .update(weeklyCheckins)
-    .set({ answers, updatedAt: new Date() })
+    .set({ answers, inputMode, updatedAt: new Date() })
     .where(eq(weeklyCheckins.id, session.id))
     .returning();
   return updated;
@@ -128,7 +133,9 @@ export async function recentCheckinsSince(
     );
 }
 
-export function totalFollowupsAcross(answers: Record<string, CheckinAnswerEntry>) {
+export function totalFollowupsAcross(
+  answers: Record<string, CheckinAnswerEntry>,
+) {
   return Object.values(answers).reduce(
     (acc, e) => acc + (e.followups?.length ?? 0),
     0,

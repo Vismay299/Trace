@@ -33,7 +33,9 @@ export async function POST() {
       );
     }
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Sample generation failed" },
+      {
+        error: err instanceof Error ? err.message : "Sample generation failed",
+      },
       { status: 500 },
     );
   }

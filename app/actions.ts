@@ -22,6 +22,13 @@ export async function joinWaitlist(
     return { ok: false, message: error };
   }
 
+  if (process.env.TRACE_E2E_MOCK_WAITLIST === "true") {
+    return {
+      ok: true,
+      message: "You're in. Watch your inbox for the strategy preview.",
+    };
+  }
+
   try {
     const { created } = await recordWaitlistSignup(submission);
     return {

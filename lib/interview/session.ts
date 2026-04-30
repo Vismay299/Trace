@@ -9,7 +9,9 @@ export type AnswerEntry = {
   mode?: "text" | "voice";
 };
 
-export async function getOrCreateSession(userId: string): Promise<InterviewSession> {
+export async function getOrCreateSession(
+  userId: string,
+): Promise<InterviewSession> {
   const [existing] = await db
     .select()
     .from(interviewSessions)

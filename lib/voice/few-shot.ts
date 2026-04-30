@@ -55,7 +55,8 @@ export async function getFewShotExamples(
             (s, i) =>
               `Example ${i + 1} (approved):\n${(s.editedContent ?? s.originalContent ?? "").trim()}`,
           )
-          .join("\n\n---\n\n") || "(none yet — generate, then mark a few as 'sounds like me')";
+          .join("\n\n---\n\n") ||
+        "(none yet — generate, then mark a few as 'sounds like me')";
 
       const rejectedBlock =
         rejected

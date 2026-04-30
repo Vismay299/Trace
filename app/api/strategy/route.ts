@@ -61,7 +61,10 @@ export async function PUT(req: Request) {
     .where(eq(strategyDocs.userId, userId))
     .returning();
   if (!updated) {
-    return NextResponse.json({ error: "No strategy doc to update" }, { status: 404 });
+    return NextResponse.json(
+      { error: "No strategy doc to update" },
+      { status: 404 },
+    );
   }
   await invalidateStrategyCache(userId);
   return NextResponse.json({ strategy: updated });

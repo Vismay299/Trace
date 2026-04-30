@@ -63,8 +63,9 @@ export function loadPrompt(
   for (const [k, v] of Object.entries(vars)) {
     merged[k] = v == null ? "" : String(v);
   }
-  const system = raw.replace(/\{\{(\w+)\}\}/g, (_, key) =>
-    merged[key] ?? `{{${key}}}`,
+  const system = raw.replace(
+    /\{\{(\w+)\}\}/g,
+    (_, key) => merged[key] ?? `{{${key}}}`,
   );
   return { meta, system, raw };
 }

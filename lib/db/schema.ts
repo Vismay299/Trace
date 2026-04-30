@@ -57,7 +57,9 @@ export const accounts = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     type: varchar("type", { length: 32 }).notNull(),
     provider: varchar("provider", { length: 64 }).notNull(),
-    providerAccountId: varchar("provider_account_id", { length: 255 }).notNull(),
+    providerAccountId: varchar("provider_account_id", {
+      length: 255,
+    }).notNull(),
     refreshToken: text("refresh_token"),
     accessToken: text("access_token"),
     expiresAt: integer("expires_at"),
@@ -154,9 +156,14 @@ export const interviewSessions = pgTable("interview_sessions", {
     .references(() => users.id, { onDelete: "cascade" }),
   currentSection: integer("current_section").default(1).notNull(),
   currentQuestion: integer("current_question").default(1).notNull(),
-  answers: jsonb("answers").default(sql`'{}'::jsonb`).$type<
-    Record<string, { answer: string; followups?: string[]; mode?: "text" | "voice" }>
-  >(),
+  answers: jsonb("answers")
+    .default(sql`'{}'::jsonb`)
+    .$type<
+      Record<
+        string,
+        { answer: string; followups?: string[]; mode?: "text" | "voice" }
+      >
+    >(),
   isComplete: boolean("is_complete").default(false).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .default(now())
@@ -196,9 +203,12 @@ export const sourceChunks = pgTable(
       () => sourceConnections.id,
       { onDelete: "set null" },
     ),
-    uploadedFileId: uuid("uploaded_file_id").references(() => uploadedFiles.id, {
-      onDelete: "cascade",
-    }),
+    uploadedFileId: uuid("uploaded_file_id").references(
+      () => uploadedFiles.id,
+      {
+        onDelete: "cascade",
+      },
+    ),
     sourceType: varchar("source_type", { length: 50 }).notNull(),
     sourceReference: text("source_reference"),
     sourceDate: timestamp("source_date", { withTimezone: true }),
@@ -245,9 +255,14 @@ export const weeklyCheckins = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     weekStartDate: date("week_start_date").notNull(),
     productStage: varchar("product_stage", { length: 20 }),
-    answers: jsonb("answers").notNull().$type<
-      Record<string, { answer: string; followups?: string[]; mode?: "text" | "voice" }>
-    >(),
+    answers: jsonb("answers")
+      .notNull()
+      .$type<
+        Record<
+          string,
+          { answer: string; followups?: string[]; mode?: "text" | "voice" }
+        >
+      >(),
     sourceActivitySummary: jsonb("source_activity_summary").$type<{
       commits_count?: number;
       docs_count?: number;

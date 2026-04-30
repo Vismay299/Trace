@@ -213,9 +213,7 @@ export function InterviewChat({
               className="flex-1"
             />
           </div>
-          {voiceError && (
-            <p className="text-sm text-danger">{voiceError}</p>
-          )}
+          {voiceError && <p className="text-sm text-danger">{voiceError}</p>}
         </div>
       ) : (
         <Textarea

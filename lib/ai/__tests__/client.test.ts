@@ -53,7 +53,9 @@ describe("callAI", () => {
       userId: "u1",
       messages: [{ role: "system", content: "hi" }],
     });
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
     expect(MODELS[body.model].tier).toBe(1);
   });
 
@@ -64,7 +66,9 @@ describe("callAI", () => {
       userId: "u1",
       messages: [{ role: "system", content: "hi" }],
     });
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
     expect(MODELS[body.model].tier).toBe(3);
   });
 

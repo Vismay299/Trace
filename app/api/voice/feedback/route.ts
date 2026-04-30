@@ -10,7 +10,11 @@ export const runtime = "nodejs";
 
 const schema = z.object({
   generatedContentId: z.string().uuid(),
-  feedback: z.enum(["sounds_like_me", "doesnt_sound_like_me", "close_but_edited"]),
+  feedback: z.enum([
+    "sounds_like_me",
+    "doesnt_sound_like_me",
+    "close_but_edited",
+  ]),
   feedbackNote: z.string().max(2000).optional(),
 });
 

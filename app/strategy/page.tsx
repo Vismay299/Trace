@@ -30,8 +30,8 @@ export default async function StrategyPage({
           Generating your Strategy…
         </h1>
         <p className="mt-3 text-text-muted">
-          We're synthesizing your interview into a one-page brand strategy.
-          This takes ~60 seconds. Don't refresh — we'll auto-redirect when it's
+          We're synthesizing your interview into a one-page brand strategy. This
+          takes ~60 seconds. Don't refresh — we'll auto-redirect when it's
           ready.
         </p>
         <GenerateStrategyTrigger />

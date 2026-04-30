@@ -119,7 +119,9 @@ export function useVoiceInput(opts?: {
         else interim += text;
       }
       if (appended) {
-        setTranscript((prev) => (prev ? prev + " " + appended.trim() : appended.trim()));
+        setTranscript((prev) =>
+          prev ? prev + " " + appended.trim() : appended.trim(),
+        );
         setInterimTranscript("");
       } else {
         setInterimTranscript(interim);
@@ -144,7 +146,9 @@ export function useVoiceInput(opts?: {
       r.start();
       setIsListening(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start recognition.");
+      setError(
+        err instanceof Error ? err.message : "Could not start recognition.",
+      );
     }
   }, [lang, silenceMs, stop]);
 
@@ -154,14 +158,17 @@ export function useVoiceInput(opts?: {
     setError(null);
   }, []);
 
-  useEffect(() => () => {
-    cleanupTimer();
-    try {
-      recognitionRef.current?.abort();
-    } catch {
-      /* noop */
-    }
-  }, []);
+  useEffect(
+    () => () => {
+      cleanupTimer();
+      try {
+        recognitionRef.current?.abort();
+      } catch {
+        /* noop */
+      }
+    },
+    [],
+  );
 
   return {
     supported,

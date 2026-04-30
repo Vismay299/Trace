@@ -72,7 +72,10 @@ export function chunkText(text: string, fallbackTitle: string): Chunk[] {
       continue;
     }
 
-    if (bufferTokens + paraTokens > TARGET_TOKENS && bufferTokens >= MIN_TOKENS) {
+    if (
+      bufferTokens + paraTokens > TARGET_TOKENS &&
+      bufferTokens >= MIN_TOKENS
+    ) {
       flush();
     }
     buffer.push(para);

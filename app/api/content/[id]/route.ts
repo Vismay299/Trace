@@ -18,8 +18,13 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await ctx.params;
-  const [row] = await db.select().from(generatedContent).where(eq(generatedContent.id, id)).limit(1);
-  if (!row || row.userId !== userId) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const [row] = await db
+    .select()
+    .from(generatedContent)
+    .where(eq(generatedContent.id, id))
+    .limit(1);
+  if (!row || row.userId !== userId)
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ content: row });
 }
 
@@ -46,12 +51,20 @@ export async function PUT(
   if (!parsed.success) {
     return NextResponse.json({ error: "Validation failed" }, { status: 400 });
   }
-  const [existing] = await db.select().from(generatedContent).where(eq(generatedContent.id, id)).limit(1);
+  const [existing] = await db
+    .select()
+    .from(generatedContent)
+    .where(eq(generatedContent.id, id))
+    .limit(1);
   if (!existing || existing.userId !== userId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  const patch: Record<string, unknown> = { ...parsed.data, updatedAt: new Date() };
-  if (parsed.data.scheduledFor) patch.scheduledFor = new Date(parsed.data.scheduledFor);
+  const patch: Record<string, unknown> = {
+    ...parsed.data,
+    updatedAt: new Date(),
+  };
+  if (parsed.data.scheduledFor)
+    patch.scheduledFor = new Date(parsed.data.scheduledFor);
   if (parsed.data.status === "published" && !existing.publishedAt) {
     patch.publishedAt = new Date();
   }
@@ -74,7 +87,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await ctx.params;
-  const [existing] = await db.select().from(generatedContent).where(eq(generatedContent.id, id)).limit(1);
+  const [existing] = await db
+    .select()
+    .from(generatedContent)
+    .where(eq(generatedContent.id, id))
+    .limit(1);
   if (!existing || existing.userId !== userId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

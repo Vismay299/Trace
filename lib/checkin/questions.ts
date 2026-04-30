@@ -23,14 +23,14 @@ export const DEFAULT_CHECKIN_QUESTIONS: CheckinQuestion[] = [
   {
     id: "wq3",
     prompt: "What surprised you?",
-    followupHint: "If they mention confusion, ask what changed in their thinking.",
+    followupHint:
+      "If they mention confusion, ask what changed in their thinking.",
   },
   {
     id: "wq4",
     prompt:
       "What did users, customers, recruiters, or teammates ask or complain about?",
-    followupHint:
-      "If they mention a user reaction, ask what it revealed.",
+    followupHint: "If they mention a user reaction, ask what it revealed.",
   },
   {
     id: "wq5",

@@ -18,7 +18,7 @@ export async function requireUserId(): Promise<string> {
 
 export async function getUserId(): Promise<string | null> {
   const session = await auth();
-  return ((session?.user as { id?: string } | undefined)?.id) ?? null;
+  return (session?.user as { id?: string } | undefined)?.id ?? null;
 }
 
 export class UnauthorizedError extends Error {

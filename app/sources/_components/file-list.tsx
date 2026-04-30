@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, FileText, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  Trash2,
+  FileText,
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
 
 export type UploadRow = {
   id: string;
@@ -43,13 +49,17 @@ export function FileList({ rows }: { rows: UploadRow[] }) {
                 {(r.fileSizeBytes ?? 0) > 0
                   ? `${Math.round((r.fileSizeBytes ?? 0) / 1024)} KB · `
                   : ""}
-                {r.chunkCount} chunks · {new Date(r.createdAt).toLocaleDateString()}
+                {r.chunkCount} chunks ·{" "}
+                {new Date(r.createdAt).toLocaleDateString()}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <StatusBadge status={r.processingStatus} error={r.processingError} />
+            <StatusBadge
+              status={r.processingStatus}
+              error={r.processingError}
+            />
             <button
               type="button"
               disabled={deletingId === r.id}

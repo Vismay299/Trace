@@ -16,7 +16,8 @@ export function useInputMode(defaultMode: InputMode = "voice") {
   }, []);
   const update = (m: InputMode) => {
     setMode(m);
-    if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, m);
+    if (typeof window !== "undefined")
+      window.localStorage.setItem(STORAGE_KEY, m);
   };
   return [mode, update] as const;
 }
@@ -38,7 +39,9 @@ export function ModeToggle({
         disabled={!voiceSupported}
         className={cn(
           "rounded-full px-4 py-1.5 transition",
-          mode === "voice" ? "bg-accent text-black" : "text-text-muted hover:text-text",
+          mode === "voice"
+            ? "bg-accent text-black"
+            : "text-text-muted hover:text-text",
           !voiceSupported && "opacity-50 cursor-not-allowed",
         )}
       >
@@ -49,7 +52,9 @@ export function ModeToggle({
         onClick={() => onChange("text")}
         className={cn(
           "rounded-full px-4 py-1.5 transition",
-          mode === "text" ? "bg-accent text-black" : "text-text-muted hover:text-text",
+          mode === "text"
+            ? "bg-accent text-black"
+            : "text-text-muted hover:text-text",
         )}
       >
         Text

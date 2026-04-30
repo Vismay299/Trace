@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { getProviders, signIn } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,23 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [oauthProviders, setOauthProviders] = useState<{
+    google?: boolean;
+    github?: boolean;
+  }>({});
+
+  useEffect(() => {
+    getProviders()
+      .then((providers) => {
+        setOauthProviders({
+          google: Boolean(providers?.google),
+          github: Boolean(providers?.github),
+        });
+      })
+      .catch(() => {
+        setOauthProviders({});
+      });
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -118,29 +135,37 @@ export function AuthForm({ mode }: { mode: Mode }) {
         </Button>
       </form>
 
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-xs uppercase tracking-[0.2em] text-text-dim">
-          or
-        </span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
+      {(oauthProviders.google || oauthProviders.github) && (
+        <>
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs uppercase tracking-[0.2em] text-text-dim">
+              or
+            </span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
 
-      <Button
-        variant="ghost"
-        className="w-full"
-        onClick={() => signIn("google", { callbackUrl: next })}
-      >
-        Continue with Google
-      </Button>
+          {oauthProviders.google && (
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => signIn("google", { callbackUrl: next })}
+            >
+              Continue with Google
+            </Button>
+          )}
 
-      <Button
-        variant="ghost"
-        className="w-full"
-        onClick={() => signIn("github", { callbackUrl: next })}
-      >
-        Continue with GitHub
-      </Button>
+          {oauthProviders.github && (
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => signIn("github", { callbackUrl: next })}
+            >
+              Continue with GitHub
+            </Button>
+          )}
+        </>
+      )}
     </div>
   );
 }

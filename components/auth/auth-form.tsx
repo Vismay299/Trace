@@ -129,6 +129,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
       <Button
         variant="ghost"
         className="w-full"
+        onClick={() => signIn("google", { callbackUrl: next })}
+      >
+        Continue with Google
+      </Button>
+
+      <Button
+        variant="ghost"
+        className="w-full"
         onClick={() => signIn("github", { callbackUrl: next })}
       >
         Continue with GitHub

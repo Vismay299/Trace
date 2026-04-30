@@ -1,7 +1,7 @@
 /**
  * NextAuth v5 (beta) configuration. Drizzle adapter wired to our user/account
- * tables. Two providers in Phase 1: Credentials (email/password, bcrypt) and
- * GitHub OAuth.
+ * tables. Providers in Phase 1: Credentials (email/password, bcrypt), Google,
+ * and GitHub OAuth.
  *
  * On first sign-in, the user gets a default ai_budgets row (Mon→Sun, free
  * tier limits) so callAI can decrement immediately.
@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
@@ -72,6 +73,15 @@ export const authConfig: NextAuthConfig = {
           GitHub({
             clientId: process.env.AUTH_GITHUB_ID,
             clientSecret: process.env.AUTH_GITHUB_SECRET,
+            allowDangerousEmailAccountLinking: true,
+          }),
+        ]
+      : []),
+    ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
+      ? [
+          Google({
+            clientId: process.env.AUTH_GOOGLE_ID,
+            clientSecret: process.env.AUTH_GOOGLE_SECRET,
             allowDangerousEmailAccountLinking: true,
           }),
         ]

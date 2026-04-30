@@ -19,16 +19,22 @@ export async function joinWaitlist(
   const error = validateWaitlistSubmission(submission);
 
   if (error) {
-    return {
-      ok: false,
-      message: error,
-    };
+    return { ok: false, message: error };
   }
 
-  recordWaitlistSignup(submission);
-
-  return {
-    ok: true,
-    message: "You're in. Watch your inbox for the strategy preview.",
-  };
+  try {
+    const { created } = await recordWaitlistSignup(submission);
+    return {
+      ok: true,
+      message: created
+        ? "You're in. Watch your inbox for the strategy preview."
+        : "Already on the list — we updated your details.",
+    };
+  } catch (err) {
+    console.error("[waitlist action] failed", err);
+    return {
+      ok: false,
+      message: "Couldn't save right now. Try again in a moment.",
+    };
+  }
 }

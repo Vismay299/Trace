@@ -1,0 +1,15 @@
+node_modules/
+.next/
+coverage/
+playwright-report/
+test-results/
+.playwright-cli/
+output/playwright/
+pnpm-lock.yaml
+
+# Source-of-truth planning/spec docs are not formatted by frontend tooling.
+AGENTS.md
+CLAUDE.md
+IMPLEMENTATION_PLAN.md
+FRONTEND_DESIGN_PLAN.md
+trace_spec.md

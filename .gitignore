@@ -8,3 +8,8 @@ dist/
 build/
 coverage/
 *.log
+tsconfig.tsbuildinfo
+playwright-report/
+test-results/
+.playwright-cli/
+output/playwright/

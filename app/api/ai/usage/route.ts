@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { and, desc, eq, gte, lte } from "drizzle-orm";
 import { requireUserId } from "@/lib/auth";
 import { currentWeekRange } from "@/lib/ai/budget";
+import { getUserAiUsageSummary } from "@/lib/ai/ops";
 import { db } from "@/lib/db";
 import { aiUsageLog } from "@/lib/db/schema";
 
@@ -30,5 +31,11 @@ export async function GET() {
     )
     .orderBy(desc(aiUsageLog.createdAt));
 
-  return NextResponse.json({ usage: rows, periodStart: start, periodEnd: end });
+  const summary = await getUserAiUsageSummary(userId);
+  return NextResponse.json({
+    usage: rows,
+    summary,
+    periodStart: start,
+    periodEnd: end,
+  });
 }

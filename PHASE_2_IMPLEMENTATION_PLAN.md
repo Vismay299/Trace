@@ -13,7 +13,7 @@ This plan takes the app from a completed Phase 1 beta product to a **public-laun
 Phase 2 (launch) covers:
 
 - First public launch pricing: `Free + Pro ($39/mo)` only
-- `OpenRouter` remains the primary AI provider stack from Phase 1; `NVIDIA NIM` is introduced as an *opt-in routing experiment*, not a primary swap
+- `OpenRouter` remains the primary AI provider stack from Phase 1; `NVIDIA NIM` is introduced as an _opt-in routing experiment_, not a primary swap
 - Paid subscriptions via Stripe with full webhook reconciliation
 - **GitHub** source integration only (Drive and Notion deferred to Phase 2.5)
 - Async sync and generation infrastructure (Redis + BullMQ)
@@ -93,7 +93,7 @@ These stay out of the Phase 2 launch unless explicitly re-approved. Items marked
 7. **No silent publishing:** Ship-to-Post creates drafts only. Publishing remains manual until Phase 3.
 8. **Embeddings are gated:** pgvector is introduced only after async workers are in place and only becomes required when source volume meaningfully exceeds the direct-context Phase 1 model.
 9. **Phase 2 voice path:** conversational voice uses browser STT for input and cloud TTS for Trace's spoken questions. Do not build full speech-to-speech realtime in this phase.
-10. **Primary/fallback AI routing:** `OpenRouter` remains the primary provider stack at launch (it is the proven Phase 1 path). `NVIDIA NIM` is wired up as an *opt-in alternate route* behind an admin flag and per-task-type override, so cost/quality data can be gathered post-launch without putting the launch on a provider migration. Promoting NIM to primary is a Phase 2.5+ decision driven by real routing data, not by this plan.
+10. **Primary/fallback AI routing:** `OpenRouter` remains the primary provider stack at launch (it is the proven Phase 1 path). `NVIDIA NIM` is wired up as an _opt-in alternate route_ behind an admin flag and per-task-type override, so cost/quality data can be gathered post-launch without putting the launch on a provider migration. Promoting NIM to primary is a Phase 2.5+ decision driven by real routing data, not by this plan.
 11. **Same provider stack for Free and Pro:** both plans use the same primary provider stack at launch (`OpenRouter`). The difference between `free` and `pro` is feature access, quota, throughput, and routing policy tolerance, not a completely different vendor.
 12. **Paid differentiation by AI economics first:** free vs Pro is primarily enforced through quotas, routing quality, throughput, and convenience, not by hiding core surfaces.
 13. **Observability is mandatory:** Sentry, PostHog, queue telemetry, and admin AI cost visibility must exist before public launch.
@@ -480,25 +480,25 @@ Deferred to Phase 2.5: **38, 39, 40, 41, 45, 46**. Their detail is preserved bel
 
 Update this table as each segment is completed. Format: `✅ done` · `🔄 in progress` · `⬜ not started`.
 
-| #  | Segment                                                                 | Status | Date completed | Notes |
-| -- | ----------------------------------------------------------------------- | ------ | -------------- | ----- |
-| 29 | Phase 2 foundation and feature gates                                    | ⬜     |                |       |
-| 30 | Observability and analytics baseline                                    | ⬜     |                |       |
-| 31 | Billing schema and Stripe domain model                                  | ⬜     |                |       |
-| 32 | Pricing, checkout, webhook lifecycle, and Pro gating                    | ⬜     |                |       |
-| 33 | Async job runtime with Redis + BullMQ                                   | ⬜     |                |       |
-| 34 | Source integration framework and sync status APIs                       | ⬜     |                |       |
-| 35 | GitHub connection flow and repo selection                               | ⬜     |                |       |
-| 36 | GitHub ingestion, normalization, and meaningful-activity filters        | ⬜     |                |       |
-| 37 | GitHub auto-sync, source-aware weekly context, and Ship-to-Post triggers | ⬜     |                |       |
-| 38 | Shared Google OAuth flow and Drive selector                             | ⬜ 2.5 |                | Deferred |
-| 39 | Google Drive sync, extraction, and chunk creation                       | ⬜ 2.5 |                | Deferred |
-| 40 | Notion connection flow and page/database selection                      | ⬜ 2.5 |                | Deferred |
-| 41 | Notion sync, content flattening, and chunk creation                     | ⬜ 2.5 |                | Deferred |
-| 42 | Claude Code / AI coding conversation import                             | ⬜     |                |       |
-| 43 | Content calendar foundations                                            | ⬜     |                |       |
-| 44 | Narrative-plan scheduling and Ship-to-Post draft UX                     | ⬜     |                |       |
-| 45 | pgvector, embeddings, semantic retrieval, and dedup                     | ⬜ 2.5 |                | Deferred |
-| 46 | Phase 2 hybrid conversational voice                                     | ⬜ 2.5 |                | Deferred |
-| 47 | AI economics operations: user credits, admin cost dashboard, and routing controls | ⬜ |                |       |
-| 48 | Public launch hardening, QA, and rollout                                | ⬜     |                |       |
+| #   | Segment                                                                           | Status  | Date completed | Notes                                                                                                      |
+| --- | --------------------------------------------------------------------------------- | ------- | -------------- | ---------------------------------------------------------------------------------------------------------- |
+| 29  | Phase 2 foundation and feature gates                                              | ⬜      |                |                                                                                                            |
+| 30  | Observability and analytics baseline                                              | ⬜      |                |                                                                                                            |
+| 31  | Billing schema and Stripe domain model                                            | ⬜      |                |                                                                                                            |
+| 32  | Pricing, checkout, webhook lifecycle, and Pro gating                              | ⬜      |                |                                                                                                            |
+| 33  | Async job runtime with Redis + BullMQ                                             | ⬜      |                |                                                                                                            |
+| 34  | Source integration framework and sync status APIs                                 | ⬜      |                |                                                                                                            |
+| 35  | GitHub connection flow and repo selection                                         | ⬜      |                |                                                                                                            |
+| 36  | GitHub ingestion, normalization, and meaningful-activity filters                  | ⬜      |                |                                                                                                            |
+| 37  | GitHub auto-sync, source-aware weekly context, and Ship-to-Post triggers          | ⬜      |                |                                                                                                            |
+| 38  | Shared Google OAuth flow and Drive selector                                       | ⬜ 2.5  |                | Deferred                                                                                                   |
+| 39  | Google Drive sync, extraction, and chunk creation                                 | ⬜ 2.5  |                | Deferred                                                                                                   |
+| 40  | Notion connection flow and page/database selection                                | ⬜ 2.5  |                | Deferred                                                                                                   |
+| 41  | Notion sync, content flattening, and chunk creation                               | ⬜ 2.5  |                | Deferred                                                                                                   |
+| 42  | Claude Code / AI coding conversation import                                       | ⬜      |                |                                                                                                            |
+| 43  | Content calendar foundations                                                      | ⬜      |                |                                                                                                            |
+| 44  | Narrative-plan scheduling and Ship-to-Post draft UX                               | ⬜      |                |                                                                                                            |
+| 45  | pgvector, embeddings, semantic retrieval, and dedup                               | ⬜ 2.5  |                | Deferred                                                                                                   |
+| 46  | Phase 2 hybrid conversational voice                                               | ⬜ 2.5  |                | Deferred                                                                                                   |
+| 47  | AI economics operations: user credits, admin cost dashboard, and routing controls | ✅ done | 2026-05-01     | User credit summaries, admin AI cost dashboard/API, tier-safe routing overrides, provider/model telemetry. |
+| 48  | Public launch hardening, QA, and rollout                                          | ⬜      |                |                                                                                                            |

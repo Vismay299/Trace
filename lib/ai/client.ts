@@ -28,8 +28,11 @@ import {
 } from "./types";
 import { checkAndDecrement, refundBudget } from "./budget";
 import { logUsage } from "./usage";
+import { resolveAiRouteDecision } from "./routing";
+import type { AiProvider } from "@/lib/config/ai-routing";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const NVIDIA_NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 
 const TIER_DEFAULT_TEMP: Record<Tier, number> = { 1: 0.4, 2: 0.3, 3: 0.2 };
 const TIER_DEFAULT_MAX_TOK: Record<Tier, number> = {
@@ -71,7 +74,12 @@ export async function callAI(opts: CallAIOpts): Promise<CallAIResult> {
     };
   }
 
-  const model = pickModel(opts.taskType, opts.model);
+  const decision = await resolveAiRouteDecision({
+    taskType: opts.taskType,
+    tier,
+    requestedModel: opts.model,
+  });
+  const model = pickModel(opts.taskType, decision.modelId);
   if (model.tier !== tier) {
     throw new AIInvalidConfigError(
       `Tier mismatch: task ${opts.taskType} expects tier ${tier}, model ${model.id} is tier ${model.tier}.`,
@@ -82,10 +90,11 @@ export async function callAI(opts: CallAIOpts): Promise<CallAIResult> {
   await checkAndDecrement(opts.userId, tier);
 
   let response: Response;
+  const startedAt = Date.now();
   try {
-    response = await fetch(OPENROUTER_URL, {
+    response = await fetch(providerUrl(decision.provider), {
       method: "POST",
-      headers: openRouterHeaders(),
+      headers: providerHeaders(decision.provider),
       body: JSON.stringify(buildPayload(model, opts)),
     });
   } catch (err) {
@@ -95,6 +104,9 @@ export async function callAI(opts: CallAIOpts): Promise<CallAIResult> {
       taskType: opts.taskType,
       costTier: tier,
       modelUsed: model.id,
+      provider: decision.provider,
+      routeDecisionReason: decision.reason,
+      latencyMs: Date.now() - startedAt,
       inputTokens: null,
       outputTokens: null,
       estimatedCostUsd: 0,
@@ -113,6 +125,9 @@ export async function callAI(opts: CallAIOpts): Promise<CallAIResult> {
       taskType: opts.taskType,
       costTier: tier,
       modelUsed: model.id,
+      provider: decision.provider,
+      routeDecisionReason: decision.reason,
+      latencyMs: Date.now() - startedAt,
       inputTokens: null,
       outputTokens: null,
       estimatedCostUsd: 0,
@@ -137,6 +152,9 @@ export async function callAI(opts: CallAIOpts): Promise<CallAIResult> {
     taskType: opts.taskType,
     costTier: tier,
     modelUsed: model.id,
+    provider: decision.provider,
+    routeDecisionReason: decision.reason,
+    latencyMs: Date.now() - startedAt,
     inputTokens,
     outputTokens,
     estimatedCostUsd: cost,
@@ -165,6 +183,17 @@ function pickModel(taskType: TaskType, override?: string): ModelConfig {
   return MODELS[id];
 }
 
+function providerUrl(provider: AiProvider): string {
+  return provider === "nvidia_nim"
+    ? (process.env.NVIDIA_NIM_BASE_URL ?? NVIDIA_NIM_URL)
+    : OPENROUTER_URL;
+}
+
+function providerHeaders(provider: AiProvider): Record<string, string> {
+  if (provider === "nvidia_nim") return nvidiaNimHeaders();
+  return openRouterHeaders();
+}
+
 function openRouterHeaders(): Record<string, string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -177,6 +206,19 @@ function openRouterHeaders(): Record<string, string> {
     "Content-Type": "application/json",
     "HTTP-Referer": process.env.OPENROUTER_SITE_URL ?? "http://localhost:3000",
     "X-Title": process.env.OPENROUTER_APP_NAME ?? "Trace",
+  };
+}
+
+function nvidiaNimHeaders(): Record<string, string> {
+  const apiKey = process.env.NVIDIA_NIM_API_KEY;
+  if (!apiKey) {
+    throw new AIInvalidConfigError(
+      "NVIDIA_NIM_API_KEY is not set. Disable NIM routing or configure the key.",
+    );
+  }
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
   };
 }
 

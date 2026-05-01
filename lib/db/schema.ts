@@ -502,6 +502,9 @@ export const aiUsageLog = pgTable(
     taskType: varchar("task_type", { length: 50 }).notNull(),
     costTier: smallint("cost_tier").notNull(),
     modelUsed: varchar("model_used", { length: 100 }),
+    provider: varchar("provider", { length: 50 }).default("openrouter"),
+    routeDecisionReason: varchar("route_decision_reason", { length: 100 }),
+    latencyMs: integer("latency_ms"),
     inputTokens: integer("input_tokens"),
     outputTokens: integer("output_tokens"),
     estimatedCostUsd: numeric("estimated_cost_usd", {
@@ -548,6 +551,36 @@ export const aiBudgets = pgTable(
       t.userId,
       t.billingPeriodStart,
     ),
+  }),
+);
+
+// --- ai_routing_overrides (segment 47 admin controls) ---
+export const aiRoutingOverrides = pgTable(
+  "ai_routing_overrides",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    scope: varchar("scope", { length: 20 }).notNull(),
+    taskType: varchar("task_type", { length: 50 }),
+    costTier: smallint("cost_tier"),
+    provider: varchar("provider", { length: 50 })
+      .default("openrouter")
+      .notNull(),
+    modelId: varchar("model_id", { length: 100 }).notNull(),
+    enabled: boolean("enabled").default(true).notNull(),
+    reason: text("reason"),
+    updatedBy: uuid("updated_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .default(now())
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .default(now())
+      .notNull(),
+  },
+  (t) => ({
+    taskIdx: index("idx_ai_routing_task").on(t.taskType, t.enabled),
+    tierIdx: index("idx_ai_routing_tier").on(t.costTier, t.enabled),
   }),
 );
 
@@ -695,6 +728,7 @@ export type WeeklyCheckin = typeof weeklyCheckins.$inferSelect;
 export type NarrativePlan = typeof narrativePlans.$inferSelect;
 export type AiUsageLog = typeof aiUsageLog.$inferSelect;
 export type AiBudget = typeof aiBudgets.$inferSelect;
+export type AiRoutingOverride = typeof aiRoutingOverrides.$inferSelect;
 export type UploadedFile = typeof uploadedFiles.$inferSelect;
 export type SourceChunk = typeof sourceChunks.$inferSelect;
 export type VoiceSample = typeof voiceSamples.$inferSelect;

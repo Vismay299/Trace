@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { NavLinks } from "@/components/site/nav-links";
 import { Logo } from "@/components/site/logo";
 
-export function MobileMenu() {
+export function MobileMenu({ user }: { user?: { name?: string | null; email?: string | null } | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -64,12 +64,20 @@ export function MobileMenu() {
           </div>
 
           <div className="mt-12 space-y-3">
-            <Button href="/signup" size="lg" className="w-full">
-              Create account
-            </Button>
-            <Button href="/login" size="lg" variant="ghost" className="w-full">
-              Sign in
-            </Button>
+            {user ? (
+              <Button href="/dashboard" size="lg" className="w-full">
+                {user.name || user.email || "Dashboard"}
+              </Button>
+            ) : (
+              <>
+                <Button href="/signup" size="lg" className="w-full">
+                  Create account
+                </Button>
+                <Button href="/login" size="lg" variant="ghost" className="w-full">
+                  Sign in
+                </Button>
+              </>
+            )}
           </div>
         </div>
       ) : null}

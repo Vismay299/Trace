@@ -27,6 +27,7 @@ export type ContentRow = {
     title?: string;
     subtitle?: string;
     caption?: string;
+    origin?: string;
   } | null;
   sourceCitation: string | null;
   status: string;
@@ -51,6 +52,7 @@ export function ContentEditor({
   const [regenOpen, setRegenOpen] = useState(false);
   const [regenGuidance, setRegenGuidance] = useState("");
   const [regenBusy, setRegenBusy] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
 
   // Sync editor state when switching tabs.
   useEffect(() => {
@@ -141,6 +143,22 @@ export function ContentEditor({
     }
   };
 
+  const schedule = async () => {
+    if (!scheduleDate) return;
+    setSavingStatus("Scheduling...");
+    const res = await fetch("/api/calendar", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        generatedContentId: active.id,
+        scheduledDate: scheduleDate,
+      }),
+    });
+    setSavingStatus(res.ok ? "Scheduled" : "Could not schedule");
+    setTimeout(() => setSavingStatus(null), 1400);
+    if (res.ok) router.refresh();
+  };
+
   const remove = async () => {
     if (!confirm("Delete this generation? It will be gone for good.")) return;
     await fetch(`/api/content/${active.id}`, { method: "DELETE" });
@@ -157,6 +175,12 @@ export function ContentEditor({
           guidance.
         </div>
       )}
+      {active.contentMetadata?.origin === "ship_to_post" ? (
+        <div className="rounded-card border border-accent/30 bg-accent-soft px-4 py-3 text-sm text-text-muted">
+          Auto-drafted from meaningful GitHub activity. Treat this as a starting
+          point, not an autopublish.
+        </div>
+      ) : null}
 
       {/* Format tabs */}
       <div className="flex flex-wrap gap-2">
@@ -255,6 +279,16 @@ export function ContentEditor({
         </Button>
         <Button onClick={() => setRegenOpen((v) => !v)} variant="ghost">
           <RefreshCw className="mr-2 size-4" /> Regenerate
+        </Button>
+        <Input
+          type="date"
+          value={scheduleDate}
+          onChange={(event) => setScheduleDate(event.target.value)}
+          className="w-auto min-w-36"
+          aria-label="Schedule date"
+        />
+        <Button onClick={schedule} disabled={!scheduleDate} variant="ghost">
+          Schedule
         </Button>
         <Button onClick={remove} variant="link" className="ml-auto text-danger">
           <Trash2 className="mr-2 size-4" /> Delete

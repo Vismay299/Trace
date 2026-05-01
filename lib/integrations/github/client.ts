@@ -26,6 +26,56 @@ export type GitHubRepo = {
   owner: { login: string };
 };
 
+export type GitHubCommit = {
+  sha: string;
+  html_url: string;
+  author: { login: string; type?: string } | null;
+  commit: {
+    message: string;
+    author: { name?: string; email?: string; date?: string | null };
+  };
+  parents?: { sha: string }[];
+  stats?: { additions?: number; deletions?: number; total?: number };
+  files?: { filename: string; status?: string; patch?: string }[];
+};
+
+export type GitHubPullRequest = {
+  id: number;
+  number: number;
+  title: string;
+  body: string | null;
+  html_url: string;
+  state: string;
+  merged_at: string | null;
+  created_at: string;
+  updated_at: string;
+  user: { login: string; type?: string } | null;
+  additions?: number;
+  deletions?: number;
+  changed_files?: number;
+};
+
+export type GitHubIssue = {
+  id: number;
+  number: number;
+  title: string;
+  body: string | null;
+  html_url: string;
+  state: string;
+  created_at: string;
+  updated_at: string;
+  user: { login: string; type?: string } | null;
+  pull_request?: unknown;
+};
+
+export type GitHubReadme = {
+  name: string;
+  path: string;
+  html_url: string;
+  content: string;
+  encoding: string;
+};
+
 export type RepoOption = {
   id: string;
   name: string;
@@ -64,7 +114,9 @@ export async function listGitHubRepos(token: string): Promise<RepoOption[]> {
       token,
       "/user/repos?per_page=100&sort=pushed&affiliation=owner,collaborator,organization_member",
     ),
-    githubGet<GitHubRepo[]>(token, "/user/starred?per_page=100").catch(() => []),
+    githubGet<GitHubRepo[]>(token, "/user/starred?per_page=100").catch(
+      () => [],
+    ),
     listPinnedRepos(token).catch(() => new Set<string>()),
   ]);
 
@@ -75,6 +127,73 @@ export async function listGitHubRepos(token: string): Promise<RepoOption[]> {
     .sort(compareRepoOptions);
 
   return options;
+}
+
+export async function listRepoCommits({
+  token,
+  repoFullName,
+  since,
+}: {
+  token: string;
+  repoFullName: string;
+  since?: string;
+}) {
+  const suffix = since ? `&since=${encodeURIComponent(since)}` : "";
+  return githubGet<GitHubCommit[]>(
+    token,
+    `/repos/${repoFullName}/commits?per_page=50${suffix}`,
+  );
+}
+
+export async function getRepoCommitDetail({
+  token,
+  repoFullName,
+  sha,
+}: {
+  token: string;
+  repoFullName: string;
+  sha: string;
+}) {
+  return githubGet<GitHubCommit>(
+    token,
+    `/repos/${repoFullName}/commits/${sha}`,
+  );
+}
+
+export async function listRepoPullRequests({
+  token,
+  repoFullName,
+}: {
+  token: string;
+  repoFullName: string;
+}) {
+  return githubGet<GitHubPullRequest[]>(
+    token,
+    `/repos/${repoFullName}/pulls?state=all&sort=updated&direction=desc&per_page=30`,
+  );
+}
+
+export async function listRepoIssues({
+  token,
+  repoFullName,
+}: {
+  token: string;
+  repoFullName: string;
+}) {
+  return githubGet<GitHubIssue[]>(
+    token,
+    `/repos/${repoFullName}/issues?state=all&sort=updated&direction=desc&per_page=30`,
+  );
+}
+
+export async function getRepoReadme({
+  token,
+  repoFullName,
+}: {
+  token: string;
+  repoFullName: string;
+}) {
+  return githubGet<GitHubReadme>(token, `/repos/${repoFullName}/readme`);
 }
 
 export function repoOptionToSelectedResource(
@@ -167,7 +286,9 @@ async function listPinnedRepos(token: string) {
   });
   if (!res.ok) return new Set<string>();
   const data = (await res.json()) as {
-    data?: { viewer?: { pinnedItems?: { nodes?: { nameWithOwner?: string }[] } } };
+    data?: {
+      viewer?: { pinnedItems?: { nodes?: { nameWithOwner?: string }[] } };
+    };
   };
   return new Set(
     data.data?.viewer?.pinnedItems?.nodes

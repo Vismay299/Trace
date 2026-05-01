@@ -27,6 +27,29 @@ export default async function ContentListPage() {
           Every piece of content Trace has generated for you, with its source.
         </p>
       </header>
+      {rows.some((row) => row.contentMetadata?.origin === "ship_to_post") ? (
+        <section className="mb-8 rounded-card border border-accent/30 bg-accent-soft p-5">
+          <h2 className="text-xl font-medium text-text">Ship-to-Post inbox</h2>
+          <p className="mt-2 text-sm text-text-muted">
+            Fresh GitHub activity created these draft ideas automatically.
+            Review them before scheduling or posting.
+          </p>
+          <div className="mt-4 grid gap-2">
+            {rows
+              .filter((row) => row.contentMetadata?.origin === "ship_to_post")
+              .slice(0, 5)
+              .map((row) => (
+                <Link
+                  key={row.id}
+                  href={`/content/${row.id}`}
+                  className="rounded-2xl border border-border-strong bg-bg px-4 py-3 text-sm text-text hover:border-accent"
+                >
+                  {row.contentMetadata?.title ?? row.content.split("\n")[0]}
+                </Link>
+              ))}
+          </div>
+        </section>
+      ) : null}
       {rows.length === 0 ? (
         <p className="rounded-card border border-border-strong bg-bg-elev p-6 text-center text-text-muted">
           Nothing yet. Head to the{" "}
@@ -45,6 +68,9 @@ export default async function ContentListPage() {
               <div className="min-w-0">
                 <p className="text-xs uppercase tracking-[0.18em] text-text-dim">
                   {r.format} · {r.status}
+                  {r.contentMetadata?.origin === "ship_to_post"
+                    ? " · ship-to-post"
+                    : ""}
                   {r.slopReviewNeeded ? " · ⚠ slop review" : ""}
                 </p>
                 <p className="truncate text-sm text-text">

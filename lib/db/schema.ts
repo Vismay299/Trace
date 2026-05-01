@@ -305,6 +305,9 @@ export const weeklyCheckins = pgTable(
       >(),
     sourceActivitySummary: jsonb("source_activity_summary").$type<{
       commits_count?: number;
+      meaningful_commits_count?: number;
+      pull_requests_count?: number;
+      github_top_repos?: string[];
       docs_count?: number;
       uploads_count?: number;
       stories_found?: number;
@@ -442,6 +445,8 @@ export const generatedContent = pgTable(
       title?: string;
       subtitle?: string;
       sample_origin?: string;
+      origin?: string;
+      sourceChunkExternalId?: string;
     }>(),
     sourceCitation: text("source_citation"),
     status: varchar("status", { length: 20 }).default("draft").notNull(),
@@ -500,8 +505,19 @@ export const contentCalendar = pgTable(
       () => generatedContent.id,
       { onDelete: "cascade" },
     ),
+    storySeedId: uuid("story_seed_id").references(() => storySeeds.id, {
+      onDelete: "set null",
+    }),
+    narrativePlanId: uuid("narrative_plan_id").references(
+      () => narrativePlans.id,
+      { onDelete: "set null" },
+    ),
+    title: text("title"),
+    description: text("description"),
     scheduledDate: date("scheduled_date").notNull(),
     platform: varchar("platform", { length: 20 }).notNull(),
+    sourceOrigin: varchar("source_origin", { length: 40 }).default("manual"),
+    metadata: jsonb("metadata"),
     status: varchar("status", { length: 20 }).default("scheduled").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .default(now())

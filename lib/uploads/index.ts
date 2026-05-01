@@ -12,6 +12,7 @@ import {
   parseFile,
 } from "@/lib/integrations/parser";
 import { chunkText } from "@/lib/integrations/chunker";
+import { normalizeCodingConversation } from "@/lib/integrations/claude-code/normalize";
 import { deleteObject, objectKeyFor, putObject } from "@/lib/storage/supabase";
 
 export const FILE_LIMIT_PER_USER = 10;
@@ -41,7 +42,13 @@ export async function ensureQuota(userId: string): Promise<number> {
 
 export async function ingestUpload(
   userId: string,
-  file: { name: string; size: number; type: string; bytes: Buffer },
+  file: {
+    name: string;
+    size: number;
+    type: string;
+    bytes: Buffer;
+    sourceKind?: "auto" | "manual_upload" | "ai_coding_log";
+  },
 ) {
   if (!isAllowedExtension(file.name)) {
     throw new UploadError(
@@ -78,7 +85,14 @@ export async function ingestUpload(
       file.type || "application/octet-stream",
     );
     const parsed = await parseFile(file.bytes, file.name);
-    const chunks = chunkText(parsed.text, file.name);
+    const codingImport = normalizeCodingConversation(parsed.text, file.name);
+    const sourceType =
+      file.sourceKind === "ai_coding_log" || codingImport.detected
+        ? "ai_coding_log"
+        : "manual_upload";
+    const textToChunk =
+      sourceType === "ai_coding_log" ? codingImport.text : parsed.text;
+    const chunks = chunkText(textToChunk, file.name);
 
     if (chunks.length === 0) {
       await db
@@ -96,14 +110,19 @@ export async function ingestUpload(
       chunks.map((c) => ({
         userId,
         uploadedFileId: row.id,
-        sourceType: "manual_upload",
-        sourceReference: `file: ${file.name}`,
+        sourceType,
+        sourceReference:
+          sourceType === "ai_coding_log"
+            ? `coding conversation: ${file.name}`
+            : `file: ${file.name}`,
         sourceDate: now,
         title: c.title,
         content: c.text,
         metadata: {
           filename: file.name,
           mime: parsed.mime,
+          importType: sourceType,
+          ...(sourceType === "ai_coding_log" ? codingImport.metadata : {}),
           chunkIndex: c.index,
           tokens: c.tokens,
         },

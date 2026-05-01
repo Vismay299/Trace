@@ -54,6 +54,8 @@ export async function POST(req: Request) {
       size: file.size,
       type: file.type,
       bytes: buffer,
+      sourceKind:
+        form.get("sourceKind") === "ai_coding_log" ? "ai_coding_log" : "auto",
     });
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {

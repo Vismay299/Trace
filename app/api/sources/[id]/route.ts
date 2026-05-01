@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUserId } from "@/lib/auth";
 import {
   disconnectSourceConnection,
+  enqueueSourceSync,
   getSourceConnection,
   toSummary,
   updateConnectionSelection,
@@ -74,12 +75,21 @@ export async function PATCH(
         sourceType: "github",
         reason: "repo_selection_updated",
         removedCount: updated.removed.length,
+        addedCount: updated.added.length,
       },
     });
+    if (updated.added.length) {
+      await enqueueSourceSync(result.userId, result.connection.id).catch(
+        () => null,
+      );
+    }
     return NextResponse.json({ connection: toSummary(updated.connection) });
   }
 
-  return NextResponse.json({ error: "No supported update provided" }, { status: 400 });
+  return NextResponse.json(
+    { error: "No supported update provided" },
+    { status: 400 },
+  );
 }
 
 export async function DELETE(

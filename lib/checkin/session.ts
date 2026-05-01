@@ -1,6 +1,7 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { weeklyCheckins, type WeeklyCheckin } from "@/lib/db/schema";
+import { getRecentGitHubActivitySummary } from "@/lib/integrations/github/activity";
 
 function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -98,11 +99,22 @@ export async function completeCheckin(
   productStage?: "building" | "launching" | "operating" | "scaling" | null,
 ): Promise<WeeklyCheckin> {
   const session = await getOrCreateCheckin(userId);
+  const githubActivity = await getRecentGitHubActivitySummary(userId).catch(
+    () => null,
+  );
   const [updated] = await db
     .update(weeklyCheckins)
     .set({
       isComplete: true,
       productStage: productStage ?? session.productStage ?? null,
+      sourceActivitySummary: githubActivity
+        ? {
+            meaningful_commits_count: githubActivity.meaningfulCommits,
+            pull_requests_count: githubActivity.pullRequests,
+            docs_count: githubActivity.readmes,
+            github_top_repos: githubActivity.topRepos,
+          }
+        : session.sourceActivitySummary,
       updatedAt: new Date(),
     })
     .where(eq(weeklyCheckins.id, session.id))

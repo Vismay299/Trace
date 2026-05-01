@@ -20,6 +20,9 @@ export function NarrativePlanPanel({
   const [selected, setSelected] = useState<number[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [scheduleStart, setScheduleStart] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
 
   const posts = useMemo(() => {
     if (!plan) return [];
@@ -110,6 +113,29 @@ export function NarrativePlanPanel({
       setError(
         err instanceof Error ? err.message : "Could not create stories.",
       );
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const schedulePlan = async () => {
+    if (!plan) return;
+    setBusy("schedule");
+    setError(null);
+    try {
+      const selectedIndexes = selected.length
+        ? selected
+        : posts.map((_, index) => index);
+      const res = await fetch(`/api/narrative/${plan.id}/schedule`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ selectedIndexes, startDate: scheduleStart }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Could not schedule plan.");
+      router.push("/calendar");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not schedule plan.");
     } finally {
       setBusy(null);
     }
@@ -241,6 +267,28 @@ export function NarrativePlanPanel({
               ? `Create ${selected.length} story seeds`
               : "Create all story seeds"}
         </Button>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <label className="text-sm text-text-muted">
+            Start scheduling on{" "}
+            <input
+              type="date"
+              value={scheduleStart}
+              onChange={(event) => setScheduleStart(event.target.value)}
+              className="ml-2 rounded-2xl border border-border-strong bg-bg px-3 py-2 text-text"
+            />
+          </label>
+          <Button
+            onClick={schedulePlan}
+            disabled={busy === "schedule"}
+            variant="ghost"
+          >
+            {busy === "schedule"
+              ? "Scheduling..."
+              : selected.length
+                ? `Schedule ${selected.length} selected`
+                : "Schedule all to calendar"}
+          </Button>
+        </div>
       </section>
     </div>
   );

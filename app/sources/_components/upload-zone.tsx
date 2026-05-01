@@ -11,12 +11,16 @@ export function UploadZone() {
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sourceKind, setSourceKind] = useState<"auto" | "ai_coding_log">(
+    "auto",
+  );
 
   const upload = async (file: File) => {
     setBusy(true);
     setError(null);
     const form = new FormData();
     form.append("file", file);
+    form.append("sourceKind", sourceKind);
     try {
       const res = await fetch("/api/uploads", { method: "POST", body: form });
       if (!res.ok) {
@@ -34,6 +38,32 @@ export function UploadZone() {
 
   return (
     <div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setSourceKind("auto")}
+          className={cn(
+            "rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.18em]",
+            sourceKind === "auto"
+              ? "border-accent bg-accent text-black"
+              : "border-border-strong text-text-muted",
+          )}
+        >
+          Auto-detect
+        </button>
+        <button
+          type="button"
+          onClick={() => setSourceKind("ai_coding_log")}
+          className={cn(
+            "rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.18em]",
+            sourceKind === "ai_coding_log"
+              ? "border-accent bg-accent text-black"
+              : "border-border-strong text-text-muted",
+          )}
+        >
+          Coding transcript
+        </button>
+      </div>
       <input
         ref={inputRef}
         type="file"

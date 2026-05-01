@@ -4,7 +4,7 @@
  * in a single prompt. Cached per (chunk_ids, strategy_version).
  */
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   sourceChunks,
@@ -52,7 +52,9 @@ export async function extractStorySeeds(userId: string): Promise<StorySeed[]> {
   const chunks = await db
     .select()
     .from(sourceChunks)
-    .where(eq(sourceChunks.userId, userId));
+    .where(
+      and(eq(sourceChunks.userId, userId), eq(sourceChunks.isActive, true)),
+    );
   if (!chunks.length) return [];
 
   const existing = await db

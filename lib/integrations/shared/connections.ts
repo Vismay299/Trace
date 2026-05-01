@@ -54,7 +54,9 @@ export async function getSourceConnection(userId: string, id: string) {
   const [connection] = await db
     .select()
     .from(sourceConnections)
-    .where(and(eq(sourceConnections.id, id), eq(sourceConnections.userId, userId)))
+    .where(
+      and(eq(sourceConnections.id, id), eq(sourceConnections.userId, userId)),
+    )
     .limit(1);
   return connection ?? null;
 }
@@ -138,7 +140,11 @@ export async function updateConnectionSelection({
 
   const previous = (connection.selectedResources ?? []) as SelectedResource[];
   const selectedIds = new Set(selectedResources.map((resource) => resource.id));
+  const previousIds = new Set(previous.map((resource) => resource.id));
   const removed = previous.filter((resource) => !selectedIds.has(resource.id));
+  const added = selectedResources.filter(
+    (resource) => !previousIds.has(resource.id),
+  );
 
   if (removed.length) {
     for (const resource of removed) {
@@ -172,7 +178,7 @@ export async function updateConnectionSelection({
     .where(eq(sourceConnections.id, connectionId))
     .returning();
 
-  return { connection: updated, removed };
+  return { connection: updated, removed, added };
 }
 
 export async function disconnectSourceConnection(userId: string, id: string) {
@@ -186,7 +192,9 @@ export async function disconnectSourceConnection(userId: string, id: string) {
       tokenExpiresAt: null,
       lastSyncError: null,
     })
-    .where(and(eq(sourceConnections.id, id), eq(sourceConnections.userId, userId)))
+    .where(
+      and(eq(sourceConnections.id, id), eq(sourceConnections.userId, userId)),
+    )
     .returning();
   return updated ?? null;
 }
@@ -227,14 +235,18 @@ export function toSummary(
     sourceType: connection.sourceType as SourceType,
     status: normalizeConnectionState(connection.connectionStatus),
     selectedCount: ((connection.selectedResources ?? []) as unknown[]).length,
-    selectedResources: (connection.selectedResources ?? []) as SelectedResource[],
+    selectedResources: (connection.selectedResources ??
+      []) as SelectedResource[],
     lastSyncedAt: connection.lastSyncedAt?.toISOString() ?? null,
     lastSyncStartedAt: connection.lastSyncStartedAt?.toISOString() ?? null,
     lastSyncSucceededAt: connection.lastSyncSucceededAt?.toISOString() ?? null,
     lastSyncError: connection.lastSyncError,
     lastJobId: connection.lastJobId,
     metadata: (connection.sourceMetadata ?? {}) as Record<string, unknown>,
-    syncCursor: (connection.syncCursor ?? null) as Record<string, unknown> | null,
+    syncCursor: (connection.syncCursor ?? null) as Record<
+      string,
+      unknown
+    > | null,
     createdAt: connection.createdAt.toISOString(),
   };
 }

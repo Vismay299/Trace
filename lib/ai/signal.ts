@@ -12,6 +12,7 @@ import {
   uploadedFiles,
   weeklyCheckins,
 } from "@/lib/db/schema";
+import { getRecentGitHubActivitySummary } from "@/lib/integrations/github/activity";
 
 export type SignalMode = "source_mining" | "low_signal";
 export type ProductStage = "building" | "launching" | "operating" | "scaling";
@@ -20,6 +21,13 @@ export type SignalInput = {
   newChunks: number;
   newSeeds: number;
   newUploads: number;
+  githubActivity?: {
+    meaningfulCommits: number;
+    pullRequests: number;
+    issues: number;
+    readmes: number;
+    topRepos: string[];
+  };
   lastCheckinSummary?: string;
   lastPlanSummary?: string;
   positioning?: string;
@@ -114,6 +122,7 @@ async function loadSignalInputs(userId: string): Promise<SignalInput> {
     [doc],
     [checkin],
     [plan],
+    githubActivity,
   ] = await Promise.all([
     db
       .select({ count: sql<number>`count(*)::int` })
@@ -121,6 +130,7 @@ async function loadSignalInputs(userId: string): Promise<SignalInput> {
       .where(
         and(
           eq(sourceChunks.userId, userId),
+          eq(sourceChunks.isActive, true),
           gte(sourceChunks.createdAt, since),
         ),
       ),
@@ -156,12 +166,14 @@ async function loadSignalInputs(userId: string): Promise<SignalInput> {
       .where(eq(narrativePlans.userId, userId))
       .orderBy(desc(narrativePlans.createdAt))
       .limit(1),
+    getRecentGitHubActivitySummary(userId, since).catch(() => undefined),
   ]);
 
   return {
     newChunks: Number(chunkCounts?.count ?? 0),
     newSeeds: Number(seedCounts?.count ?? 0),
     newUploads: Number(uploadCounts?.count ?? 0),
+    githubActivity,
     lastCheckinSummary: checkin ? summarizeAnswers(checkin.answers) : "",
     lastPlanSummary: plan
       ? [plan.mainTheme, plan.contentStrategy].filter(Boolean).join(" ")

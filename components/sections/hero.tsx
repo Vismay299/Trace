@@ -3,8 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { ChapterCard } from "@/components/visuals/chapter-card";
 import { HERO_COPY } from "@/content/copy";
+import { auth } from "@/lib/auth";
 
-export function Hero() {
+export async function Hero() {
+  const session = await auth();
+  const loggedIn = !!session?.user;
+
   return (
     <section className="px-5 py-16 sm:py-20 lg:px-8 lg:py-24">
       <div className="hero-enter mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.95fr_1.05fr]">
@@ -17,13 +21,23 @@ export function Hero() {
             {HERO_COPY.body}
           </p>
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <Button
-              href="/signup"
-              size="lg"
-              trailing={<ArrowRight aria-hidden className="size-5" />}
-            >
-              Create your account
-            </Button>
+            {loggedIn ? (
+              <Button
+                href="/dashboard"
+                size="lg"
+                trailing={<ArrowRight aria-hidden className="size-5" />}
+              >
+                Go to Dashboard
+              </Button>
+            ) : (
+              <Button
+                href="/signup"
+                size="lg"
+                trailing={<ArrowRight aria-hidden className="size-5" />}
+              >
+                Create your account
+              </Button>
+            )}
             <Button href="/story" variant="ghost" size="lg">
               Read the story
             </Button>

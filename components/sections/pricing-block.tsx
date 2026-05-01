@@ -5,12 +5,27 @@ import { Eyebrow } from "@/components/ui/eyebrow";
 import { Pill } from "@/components/ui/pill";
 import { PRICING_TIERS } from "@/content/pricing";
 import { cn } from "@/lib/cn";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 type PricingBlockProps = {
   intro?: boolean;
 };
 
-export function PricingBlock({ intro = true }: PricingBlockProps) {
+export async function PricingBlock({ intro = true }: PricingBlockProps) {
+  const session = await auth();
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  let userTier = "free";
+  if (userId) {
+    const [row] = await db
+      .select({ tier: users.tier })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (row) userTier = row.tier;
+  }
   return (
     <section className="relative px-5 py-16 sm:py-24 lg:px-8">
       <div
@@ -64,17 +79,73 @@ export function PricingBlock({ intro = true }: PricingBlockProps) {
                 ))}
               </ul>
 
-              <Button
-                href={tier.cta.href}
-                variant={tier.featured ? "primary" : "ghost"}
-                className="mt-auto w-full"
-              >
-                {tier.cta.label}
-              </Button>
+              <PricingCta tier={tier} userTier={userTier} loggedIn={!!userId} />
             </Card>
           ))}
         </div>
       </div>
     </section>
   );
+}
+
+function PricingCta({
+  tier,
+  userTier,
+  loggedIn,
+}: {
+  tier: (typeof PRICING_TIERS)[number];
+  userTier: string;
+  loggedIn: boolean;
+}) {
+  if (!loggedIn) {
+    return (
+      <Button
+        href={tier.cta.href}
+        variant={tier.featured ? "primary" : "ghost"}
+        className="mt-auto w-full"
+      >
+        {tier.cta.label}
+      </Button>
+    );
+  }
+
+  if (tier.slug === "studio") {
+    return (
+      <Button variant="ghost" className="mt-auto w-full" disabled>
+        Coming soon
+      </Button>
+    );
+  }
+
+  if (tier.slug === "strategy") {
+    if (userTier === "free") {
+      return (
+        <Button variant="ghost" className="mt-auto w-full" disabled>
+          Current plan
+        </Button>
+      );
+    }
+    return (
+      <Button variant="ghost" className="mt-auto w-full" disabled>
+        Included
+      </Button>
+    );
+  }
+
+  if (tier.slug === "pro") {
+    if (userTier === "pro") {
+      return (
+        <Button variant="primary" className="mt-auto w-full" disabled>
+          Current plan
+        </Button>
+      );
+    }
+    return (
+      <Button href="/settings" variant="primary" className="mt-auto w-full">
+        Upgrade
+      </Button>
+    );
+  }
+
+  return null;
 }

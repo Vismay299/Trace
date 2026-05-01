@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { STORY_SECTIONS } from "@/content/copy";
+import { auth } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Story",
@@ -10,7 +11,9 @@ export const metadata: Metadata = {
     "Why Trace exists for builders who have proof of work but no public story.",
 };
 
-export default function StoryPage() {
+export default async function StoryPage() {
+  const session = await auth();
+  const loggedIn = !!session?.user;
   return (
     <div className="px-5 py-16 sm:py-24 lg:px-8">
       <article className="mx-auto max-w-3xl">
@@ -72,8 +75,8 @@ export default function StoryPage() {
         </Card>
 
         <div className="mt-12">
-          <Button href="/signup" size="lg">
-            Create your account
+          <Button href={loggedIn ? "/dashboard" : "/signup"} size="lg">
+            {loggedIn ? "Go to Dashboard" : "Create your account"}
           </Button>
         </div>
       </article>

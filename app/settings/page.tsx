@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { eq, sql } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -75,6 +76,17 @@ export default async function SettingsPage() {
               </p>
             </div>
           ))}
+        </div>
+        <div className="mt-6 flex flex-wrap gap-3 text-sm text-text-muted">
+          <Link href="/legal/privacy" className="text-accent hover:underline">
+            Privacy Policy
+          </Link>
+          <Link href="/legal/data-use" className="text-accent hover:underline">
+            Data-Use Disclosure
+          </Link>
+          <Link href="/legal/terms" className="text-accent hover:underline">
+            Terms of Service
+          </Link>
         </div>
       </section>
 

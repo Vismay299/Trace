@@ -9,7 +9,15 @@ import { Label } from "@/components/ui/label";
 
 type Mode = "signup" | "login";
 
-export function AuthForm({ mode }: { mode: Mode }) {
+export function AuthForm({
+  mode,
+  betaGateEnabled = false,
+  betaCode = "",
+}: {
+  mode: Mode;
+  betaGateEnabled?: boolean;
+  betaCode?: string;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/dashboard";
@@ -17,6 +25,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [betaAccessCode, setBetaAccessCode] = useState(betaCode);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [oauthProviders, setOauthProviders] = useState<{
@@ -46,7 +55,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
         const res = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ email, password, name: name || undefined }),
+          body: JSON.stringify({
+            email,
+            password,
+            name: name || undefined,
+            betaAccessCode: betaAccessCode || undefined,
+          }),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => null);
@@ -117,6 +131,19 @@ export function AuthForm({ mode }: { mode: Mode }) {
             placeholder="At least 8 characters"
           />
         </div>
+
+        {mode === "signup" && betaGateEnabled ? (
+          <div>
+            <Label htmlFor="beta-access-code">Beta access code</Label>
+            <Input
+              id="beta-access-code"
+              autoComplete="one-time-code"
+              value={betaAccessCode}
+              onChange={(e) => setBetaAccessCode(e.target.value)}
+              placeholder="Optional if your email is allow-listed"
+            />
+          </div>
+        ) : null}
 
         {error && (
           <p className="rounded-2xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">

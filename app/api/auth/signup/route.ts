@@ -10,6 +10,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { getOrCreateBudget } from "@/lib/ai/budget";
+import { isBetaSignupAllowed } from "@/lib/flags";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,7 @@ const schema = z.object({
   email: z.string().email().max(254),
   password: z.string().min(8).max(128),
   name: z.string().min(1).max(100).optional(),
+  betaAccessCode: z.string().max(80).optional(),
 });
 
 export async function POST(req: Request) {
@@ -35,6 +37,21 @@ export async function POST(req: Request) {
   }
 
   const email = parsed.data.email.toLowerCase().trim();
+  if (
+    !isBetaSignupAllowed({
+      email,
+      accessCode: parsed.data.betaAccessCode,
+    })
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Trace is in invite-only launch mode. Join the waitlist or use your beta access code.",
+      },
+      { status: 403 },
+    );
+  }
+
   const existing = await db
     .select({ id: users.id })
     .from(users)

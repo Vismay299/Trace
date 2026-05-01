@@ -88,10 +88,48 @@ test.describe("Trace marketing site", () => {
 
     const sitemap = await page.request.get("/sitemap.xml");
     expect(sitemap.ok()).toBeTruthy();
-    expect(await sitemap.text()).toContain("/product");
+    const sitemapXml = await sitemap.text();
+    expect(sitemapXml).toContain("/product");
+    expect(sitemapXml).toContain("/legal/privacy");
 
     const og = await page.request.get("/opengraph-image");
     expect(og.ok()).toBeTruthy();
     expect(og.headers()["content-type"]).toContain("image/png");
+  });
+
+  test("surfaces launch legal and data-use pages", async ({ page }) => {
+    await page.goto("/signup");
+    const main = page.getByRole("main");
+
+    await expect(main.getByRole("link", { name: "Terms" })).toHaveAttribute(
+      "href",
+      "/legal/terms",
+    );
+    await expect(
+      main.getByRole("link", { name: "Privacy Policy" }),
+    ).toHaveAttribute("href", "/legal/privacy");
+    await expect(
+      main.getByRole("link", { name: "Data-Use Disclosure" }),
+    ).toHaveAttribute("href", "/legal/data-use");
+
+    await page.goto("/legal/terms");
+    await expect(
+      page.getByRole("heading", { name: "Terms of Service" }),
+    ).toBeVisible();
+    await expect(page.getByText("Stripe is the billing system")).toBeVisible();
+
+    await page.goto("/legal/privacy");
+    await expect(
+      page.getByRole("heading", { name: "Privacy Policy" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Trace does not use your private sources"),
+    ).toBeVisible();
+
+    await page.goto("/legal/data-use");
+    await expect(
+      page.getByRole("heading", { name: "Data-Use Disclosure" }),
+    ).toBeVisible();
+    await expect(page.getByText("GitHub OAuth Scopes")).toBeVisible();
   });
 });

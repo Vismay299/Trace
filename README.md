@@ -56,6 +56,28 @@ Playwright starts the dev server automatically for tests. The authenticated
 golden-path E2E is present but skipped unless `TRACE_E2E_FULL=true` is set with
 a seeded Postgres/OpenRouter test environment.
 
+## Public Launch Controls
+
+Launch access is controlled with `TRACE_FEATURE_BETA_GATE`. When it is `true`,
+new email/password signups must match `TRACE_BETA_ALLOWED_EMAILS` or provide a
+code from `TRACE_BETA_ACCESS_CODES`; everyone else is directed to the waitlist.
+
+Keep Phase 2 feature gates off until their launch checks pass:
+
+- `TRACE_FEATURE_BILLING`
+- `TRACE_FEATURE_GITHUB_SYNC`
+- `TRACE_FEATURE_CALENDAR`
+- `TRACE_FEATURE_SHIP_TO_POST`
+- `TRACE_FEATURE_ADMIN_AI_OPS`
+- `TRACE_FEATURE_NIM_ROUTING`
+
+Operational launch docs live in `docs/launch/`:
+
+- `checklist.md`
+- `failure-path-qa.md`
+- `analytics-funnel.md`
+- `runbooks.md`
+
 ## Routes
 
 - `/` - Home journey: hero, origin, source proof, pricing, waitlist
@@ -63,6 +85,9 @@ a seeded Postgres/OpenRouter test environment.
 - `/product` - Feature walkthrough with static product visuals
 - `/pricing` - Tiers, comparison table, FAQ
 - `/waitlist` - Standalone signup page with tier-aware query params
+- `/legal/terms` - Terms of Service
+- `/legal/privacy` - Privacy Policy
+- `/legal/data-use` - Data-use disclosure
 - `/onboarding` - Strategy interview with text/voice input
 - `/strategy` - Strategy Doc generation, edit, regeneration, and PDF
 - `/sources` - Manual source uploads and parsing

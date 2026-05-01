@@ -42,15 +42,30 @@ export function featureFlagSnapshot(env: EnvInput = process.env) {
 
 export function isAdminEmail(email?: string | null): boolean {
   if (!email) return false;
-  return csv(process.env.TRACE_ADMIN_EMAILS).includes(email.toLowerCase());
+  return csv(process.env.TRACE_ADMIN_EMAILS).includes(
+    email.trim().toLowerCase(),
+  );
 }
 
 export function isBetaAllowed(email?: string | null): boolean {
   if (!isFeatureEnabled("beta_gate")) return true;
   if (isAdminEmail(email)) return true;
   return csv(process.env.TRACE_BETA_ALLOWED_EMAILS).includes(
-    (email ?? "").toLowerCase(),
+    (email ?? "").trim().toLowerCase(),
   );
+}
+
+export function isBetaSignupAllowed({
+  email,
+  accessCode,
+}: {
+  email?: string | null;
+  accessCode?: string | null;
+}): boolean {
+  if (isBetaAllowed(email)) return true;
+  const normalizedCode = accessCode?.trim().toLowerCase();
+  if (!normalizedCode) return false;
+  return csv(process.env.TRACE_BETA_ACCESS_CODES).includes(normalizedCode);
 }
 
 function csv(value?: string) {

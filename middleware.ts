@@ -15,6 +15,7 @@ const PUBLIC_PREFIXES = [
   "/pricing",
   "/product",
   "/story",
+  "/legal",
   "/waitlist",
   "/_dev",
   "/_next",

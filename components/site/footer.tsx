@@ -5,6 +5,9 @@ import { NAV_LINKS } from "@/content/copy";
 
 const legalLinks = [
   { href: "/waitlist", label: "Waitlist" },
+  { href: "/legal/terms", label: "Terms" },
+  { href: "/legal/privacy", label: "Privacy" },
+  { href: "/legal/data-use", label: "Data use" },
   { href: "mailto:hello@trace.app", label: "Contact" },
 ];
 

@@ -33,6 +33,7 @@ const phase2EnvSchema = z.object({
   NOTION_CLIENT_ID: z.string().optional(),
   NOTION_CLIENT_SECRET: z.string().optional(),
   TRACE_BETA_ALLOWED_EMAILS: z.string().optional(),
+  TRACE_BETA_ACCESS_CODES: z.string().optional(),
 });
 
 export type Phase2Env = z.infer<typeof phase2EnvSchema>;

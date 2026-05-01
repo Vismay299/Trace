@@ -50,7 +50,11 @@ export default async function SettingsPage() {
             />
           </div>
         </section>
-        <TierCard tier={user.tier} />
+        <TierCard
+          tier={user.tier}
+          status={user.stripeSubscriptionStatus}
+          cancelAtPeriodEnd={user.cancelAtPeriodEnd}
+        />
       </div>
 
       <div className="mt-6">

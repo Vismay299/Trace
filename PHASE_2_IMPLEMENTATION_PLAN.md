@@ -482,11 +482,11 @@ Update this table as each segment is completed. Format: `✅ done` · `🔄 in p
 
 | #  | Segment                                                                 | Status | Date completed | Notes |
 | -- | ----------------------------------------------------------------------- | ------ | -------------- | ----- |
-| 29 | Phase 2 foundation and feature gates                                    | ⬜     |                |       |
-| 30 | Observability and analytics baseline                                    | ⬜     |                |       |
-| 31 | Billing schema and Stripe domain model                                  | ⬜     |                |       |
-| 32 | Pricing, checkout, webhook lifecycle, and Pro gating                    | ⬜     |                |       |
-| 33 | Async job runtime with Redis + BullMQ                                   | ⬜     |                |       |
+| 29 | Phase 2 foundation and feature gates                                    | ✅ done | 2026-05-01     | Flags, env validation, AI routing config, schema foundation, README boot notes. |
+| 30 | Observability and analytics baseline                                    | ✅ done | 2026-05-01     | Sentry/PostHog scaffolding, redaction, health endpoint, critical error capture. |
+| 31 | Billing schema and Stripe domain model                                  | ✅ done | 2026-05-01     | Stripe fields, launch plan mapping, webhook reconciliation helpers, billing tests. |
+| 32 | Pricing, checkout, webhook lifecycle, and Pro gating                    | ✅ done | 2026-05-01     | Checkout/portal/webhook routes, Pro budget enforcement, Studio coming soon, Redo Strategy. |
+| 33 | Async job runtime with Redis + BullMQ                                   | ✅ done | 2026-05-01     | Shared queues, worker entrypoint, status API, retry/error helpers, job tests. |
 | 34 | Source integration framework and sync status APIs                       | ⬜     |                |       |
 | 35 | GitHub connection flow and repo selection                               | ⬜     |                |       |
 | 36 | GitHub ingestion, normalization, and meaningful-activity filters        | ⬜     |                |       |

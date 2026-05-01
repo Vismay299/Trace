@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Pill } from "@/components/ui/pill";
+import { BillingActionButton } from "@/components/billing/billing-action-button";
 import { PRICING_TIERS } from "@/content/pricing";
 import { cn } from "@/lib/cn";
 
@@ -64,13 +65,25 @@ export function PricingBlock({ intro = true }: PricingBlockProps) {
                 ))}
               </ul>
 
-              <Button
-                href={tier.cta.href}
-                variant={tier.featured ? "primary" : "ghost"}
-                className="mt-auto w-full"
-              >
-                {tier.cta.label}
-              </Button>
+              <div className="mt-auto">
+                {tier.slug === "pro" ? (
+                  <BillingActionButton action="checkout">
+                    {tier.cta.label}
+                  </BillingActionButton>
+                ) : tier.slug === "studio" ? (
+                  <Button disabled variant="ghost" className="w-full">
+                    {tier.cta.label}
+                  </Button>
+                ) : (
+                  <Button
+                    href={tier.cta.href}
+                    variant={tier.featured ? "primary" : "ghost"}
+                    className="w-full"
+                  >
+                    {tier.cta.label}
+                  </Button>
+                )}
+              </div>
             </Card>
           ))}
         </div>

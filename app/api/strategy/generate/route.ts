@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { AIBudgetExhaustedError } from "@/lib/ai/types";
+import { captureException } from "@/lib/observability";
 
 export const runtime = "nodejs";
 export const maxDuration = 90; // Tier 1 strategy doc + samples can be slow.
@@ -57,6 +58,7 @@ export async function POST() {
       );
     }
     console.error("[strategy/generate] failed", err);
+    captureException(err, "strategy_generate");
     return NextResponse.json(
       {
         error:

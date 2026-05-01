@@ -5,6 +5,7 @@ import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/header";
 import { AmbientGlow } from "@/components/site/ambient-glow";
 import { SITE } from "@/content/copy";
+import { AnalyticsProvider } from "@/lib/analytics/client";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,10 +46,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        <AmbientGlow />
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        <AnalyticsProvider>
+          <AmbientGlow />
+          <Header />
+          <main>{children}</main>
+          <Footer />
+        </AnalyticsProvider>
       </body>
     </html>
   );

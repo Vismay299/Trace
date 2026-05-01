@@ -25,6 +25,10 @@ export async function GET() {
       email: users.email,
       name: users.name,
       tier: users.tier,
+      planCode: users.planCode,
+      stripeSubscriptionStatus: users.stripeSubscriptionStatus,
+      billingPeriodEnd: users.billingPeriodEnd,
+      cancelAtPeriodEnd: users.cancelAtPeriodEnd,
       createdAt: users.createdAt,
     })
     .from(users)

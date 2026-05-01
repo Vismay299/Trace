@@ -8,3 +8,8 @@ process.env.DATABASE_URL ??=
   "postgres://postgres:postgres@localhost:5432/trace_test";
 process.env.RESEND_API_KEY ??= "test-resend-key";
 process.env.RESEND_FROM_EMAIL ??= "test@example.com";
+process.env.STRIPE_SECRET_KEY ??= "sk_test_123";
+process.env.STRIPE_WEBHOOK_SECRET ??= "whsec_123";
+process.env.STRIPE_PRO_PRICE_ID ??= "price_pro";
+process.env.REDIS_URL ??= "redis://localhost:6379";
+process.env.POSTHOG_KEY ??= "ph_test";

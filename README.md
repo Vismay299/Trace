@@ -28,6 +28,20 @@ npx pnpm dev
 
 The dev server runs at `http://localhost:3000`.
 
+Phase 2 local services are flag-gated. For billing, queue, and integration
+work, run Postgres/Supabase as before plus Redis:
+
+```sh
+redis-server
+npx pnpm workers:dev
+```
+
+Use Stripe test mode and a GitHub sandbox OAuth/App account for local provider
+testing. Stripe requires `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and
+`STRIPE_PRO_PRICE_ID` only when `TRACE_FEATURE_BILLING=true`. The optional NIM
+routing experiment requires `NVIDIA_NIM_API_KEY` only when
+`TRACE_FEATURE_NIM_ROUTING=true`; OpenRouter remains the primary launch route.
+
 ## Quality Checks
 
 ```sh
@@ -70,6 +84,9 @@ a seeded Postgres/OpenRouter test environment.
   `NEXTAUTH_SECRET`, `GITHUB_CLIENT_*`, and `GOOGLE_CLIENT_*`.
 - Phase 1 intentionally skips embeddings and async queues.
 - Billing and source integrations beyond manual uploads are Phase 2 placeholders.
+- Phase 2 launch work is tracked in `PHASE_2_IMPLEMENTATION_PLAN.md`. Segments
+  29-33 add flags/env validation, observability, Stripe billing, Pro gating,
+  Redo Strategy, and Redis/BullMQ worker scaffolding behind feature flags.
 
 ## Deploy
 

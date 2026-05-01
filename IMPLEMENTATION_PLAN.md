@@ -394,6 +394,9 @@ The repo currently contains spec documents only — no code, no `package.json`, 
 
 ## Phase 2 outline (~Weeks 7–12, segments 29–37) — to be re-planned in detail when Phase 1 ships
 
+Detailed Phase 2 execution now lives in `PHASE_2_IMPLEMENTATION_PLAN.md`.
+Phase 2 segments should be implemented and verified against that document.
+
 29. **Stripe + Pro tier** — paywall after Strategy Doc, $39/mo, webhook reconciliation.
 30. **GitHub integration** — App OAuth, scan commits/PRs/READMEs/issues, auto-sync, filter bot/merge/dependency commits.
 31. **Google Drive integration** — OAuth, folder selector, doc/sheet/slides text extraction.

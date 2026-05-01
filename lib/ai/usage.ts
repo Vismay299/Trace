@@ -7,6 +7,9 @@ export type UsageRow = {
   taskType: TaskType;
   costTier: Tier;
   modelUsed: string | null;
+  provider?: string | null;
+  routeDecisionReason?: string | null;
+  latencyMs?: number | null;
   inputTokens: number | null;
   outputTokens: number | null;
   estimatedCostUsd: number;
@@ -22,6 +25,9 @@ export async function logUsage(row: UsageRow): Promise<void> {
       taskType: row.taskType,
       costTier: row.costTier,
       modelUsed: row.modelUsed,
+      provider: row.provider ?? "openrouter",
+      routeDecisionReason: row.routeDecisionReason ?? null,
+      latencyMs: row.latencyMs ?? null,
       inputTokens: row.inputTokens,
       outputTokens: row.outputTokens,
       estimatedCostUsd: row.estimatedCostUsd.toString(),

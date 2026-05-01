@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { StrategySection } from "./strategy-section";
+import { RedoStrategyButton } from "./redo-strategy-button";
 import type { StrategyDoc } from "@/lib/db/schema";
 
 type SamplePost = {
@@ -75,6 +76,7 @@ export function StrategyView({
           <Button href="/strategy/pdf" variant="ghost">
             Download as PDF
           </Button>
+          <RedoStrategyButton />
           <Button href="/sources">Connect a source →</Button>
         </div>
       </header>

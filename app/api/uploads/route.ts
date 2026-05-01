@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { uploadedFiles } from "@/lib/db/schema";
 import { ingestUpload, UploadError } from "@/lib/uploads";
+import { captureException } from "@/lib/observability";
 
 export const runtime = "nodejs";
 export const maxDuration = 90;
@@ -69,6 +70,7 @@ export async function POST(req: Request) {
       );
     }
     console.error("[uploads] failed", err);
+    captureException(err, "uploads");
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Upload failed." },
       { status: 500 },

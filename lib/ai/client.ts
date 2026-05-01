@@ -28,6 +28,7 @@ import {
 } from "./types";
 import { checkAndDecrement, refundBudget } from "./budget";
 import { logUsage } from "./usage";
+import { getAiRouteConfig } from "@/lib/config/ai-routing";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -78,10 +79,13 @@ export async function callAI(opts: CallAIOpts): Promise<CallAIResult> {
     );
   }
 
+  const route = getAiRouteConfig();
+
   // Atomic budget gate. Throws BudgetExhausted on failure.
   await checkAndDecrement(opts.userId, tier);
 
   let response: Response;
+  const startedAt = Date.now();
   try {
     response = await fetch(OPENROUTER_URL, {
       method: "POST",
@@ -95,6 +99,9 @@ export async function callAI(opts: CallAIOpts): Promise<CallAIResult> {
       taskType: opts.taskType,
       costTier: tier,
       modelUsed: model.id,
+      provider: route.primaryProvider,
+      routeDecisionReason: "primary",
+      latencyMs: Date.now() - startedAt,
       inputTokens: null,
       outputTokens: null,
       estimatedCostUsd: 0,
@@ -113,6 +120,9 @@ export async function callAI(opts: CallAIOpts): Promise<CallAIResult> {
       taskType: opts.taskType,
       costTier: tier,
       modelUsed: model.id,
+      provider: route.primaryProvider,
+      routeDecisionReason: "primary",
+      latencyMs: Date.now() - startedAt,
       inputTokens: null,
       outputTokens: null,
       estimatedCostUsd: 0,
@@ -136,8 +146,11 @@ export async function callAI(opts: CallAIOpts): Promise<CallAIResult> {
     userId: opts.userId,
     taskType: opts.taskType,
     costTier: tier,
-    modelUsed: model.id,
-    inputTokens,
+      modelUsed: model.id,
+      provider: route.primaryProvider,
+      routeDecisionReason: "primary",
+      latencyMs: Date.now() - startedAt,
+      inputTokens,
     outputTokens,
     estimatedCostUsd: cost,
     cached: false,

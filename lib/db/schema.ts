@@ -40,6 +40,18 @@ export const users = pgTable("users", {
   tier: varchar("tier", { length: 20 }).default("free").notNull(),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  stripeSubscriptionStatus: varchar("stripe_subscription_status", {
+    length: 50,
+  }),
+  planCode: varchar("plan_code", { length: 20 }).default("free").notNull(),
+  billingPeriodStart: timestamp("billing_period_start", {
+    withTimezone: true,
+  }),
+  billingPeriodEnd: timestamp("billing_period_end", { withTimezone: true }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
+  lastStripeWebhookAt: timestamp("last_stripe_webhook_at", {
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .default(now())
     .notNull(),
@@ -183,8 +195,21 @@ export const sourceConnections = pgTable("source_connections", {
   accessTokenEncrypted: text("access_token_encrypted"),
   refreshTokenEncrypted: text("refresh_token_encrypted"),
   tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+  providerAccountId: varchar("provider_account_id", { length: 255 }),
+  providerInstallationId: varchar("provider_installation_id", { length: 255 }),
+  connectionStatus: varchar("connection_status", { length: 30 })
+    .default("not_connected")
+    .notNull(),
   sourceMetadata: jsonb("source_metadata"),
+  syncCursor: jsonb("sync_cursor"),
+  lastSyncStartedAt: timestamp("last_sync_started_at", { withTimezone: true }),
+  lastSyncSucceededAt: timestamp("last_sync_succeeded_at", {
+    withTimezone: true,
+  }),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  lastSyncError: text("last_sync_error"),
+  lastJobId: varchar("last_job_id", { length: 255 }),
+  selectedResources: jsonb("selected_resources"),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .default(now())
@@ -502,6 +527,9 @@ export const aiUsageLog = pgTable(
     taskType: varchar("task_type", { length: 50 }).notNull(),
     costTier: smallint("cost_tier").notNull(),
     modelUsed: varchar("model_used", { length: 100 }),
+    provider: varchar("provider", { length: 50 }).default("openrouter"),
+    routeDecisionReason: varchar("route_decision_reason", { length: 100 }),
+    latencyMs: integer("latency_ms"),
     inputTokens: integer("input_tokens"),
     outputTokens: integer("output_tokens"),
     estimatedCostUsd: numeric("estimated_cost_usd", {

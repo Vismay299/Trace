@@ -8,6 +8,13 @@
       "when": 1777573319981,
       "tag": "0000_light_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777590000000,
+      "tag": "0001_phase2_foundation",
+      "breakpoints": true
     }
   ]
 }

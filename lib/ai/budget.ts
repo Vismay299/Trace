@@ -7,9 +7,9 @@
  * Atomic check-and-decrement via SQL CASE so concurrent calls can't
  * over-spend. On transport failure we restore the count (refundBudget).
  */
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { aiBudgets, type AiBudget } from "@/lib/db/schema";
+import { aiBudgets, users, type AiBudget } from "@/lib/db/schema";
 import { AIBudgetExhaustedError } from "./types";
 import type { Tier } from "./models";
 
@@ -19,8 +19,23 @@ const PHASE1_LIMITS: Record<"free" | "pro" | "studio", Record<Tier, number>> = {
   studio: { 1: 500, 2: 800, 3: 2000 },
 };
 
-export function defaultLimitsFor(tier: "free" | "pro" | "studio") {
+export type UserTier = "free" | "pro" | "studio";
+
+export function normalizeUserTier(tier?: string | null): UserTier {
+  return tier === "pro" || tier === "studio" ? tier : "free";
+}
+
+export function defaultLimitsFor(tier: UserTier) {
   return PHASE1_LIMITS[tier];
+}
+
+export async function getUserTier(userId: string): Promise<UserTier> {
+  const [user] = await db
+    .select({ tier: users.tier })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return normalizeUserTier(user?.tier);
 }
 
 function isoDate(d: Date): string {
@@ -46,7 +61,7 @@ export function currentWeekRange(now = new Date()): {
 
 export async function getOrCreateBudget(
   userId: string,
-  tier: "free" | "pro" | "studio" = "free",
+  tier: UserTier = "free",
 ): Promise<AiBudget> {
   const { start, end } = currentWeekRange();
   const limits = PHASE1_LIMITS[tier];
@@ -111,9 +126,12 @@ const TIER_LIMIT_COL: Record<
 export async function checkAndDecrement(
   userId: string,
   tier: Tier,
-  userTier: "free" | "pro" | "studio" = "free",
+  userTier?: UserTier,
 ): Promise<{ used: number; limit: number; periodEnd: string }> {
-  const budget = await getOrCreateBudget(userId, userTier);
+  const budget = await getOrCreateBudget(
+    userId,
+    userTier ?? (await getUserTier(userId)),
+  );
   const usedKey = TIER_USED_COL[tier];
   const limitKey = TIER_LIMIT_COL[tier];
 
@@ -176,9 +194,12 @@ export type BudgetSnapshot = {
 
 export async function getBudgetSnapshot(
   userId: string,
-  userTier: "free" | "pro" | "studio" = "free",
+  userTier?: UserTier,
 ): Promise<BudgetSnapshot> {
-  const b = await getOrCreateBudget(userId, userTier);
+  const b = await getOrCreateBudget(
+    userId,
+    userTier ?? (await getUserTier(userId)),
+  );
   return {
     tier1: { used: b.tier1RequestsUsed, limit: b.tier1RequestsLimit },
     tier2: { used: b.tier2RequestsUsed, limit: b.tier2RequestsLimit },
@@ -186,6 +207,24 @@ export async function getBudgetSnapshot(
     periodStart: b.billingPeriodStart,
     periodEnd: b.billingPeriodEnd,
   };
+}
+
+export async function refreshCurrentBudgetLimits(
+  userId: string,
+  limits: Record<Tier, number>,
+) {
+  const { start } = currentWeekRange();
+  await db
+    .update(aiBudgets)
+    .set({
+      tier1RequestsLimit: limits[1],
+      tier2RequestsLimit: limits[2],
+      tier3RequestsLimit: limits[3],
+      updatedAt: new Date(),
+    })
+    .where(
+      sql`${aiBudgets.userId} = ${userId} AND ${aiBudgets.billingPeriodStart} = ${start}`,
+    );
 }
 
 function snakeCase(camel: string): string {

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { requireUserId } from "@/lib/auth";
 import { generateForStory } from "@/lib/ai/generate";
 import { AIBudgetExhaustedError } from "@/lib/ai/types";
+import { captureServerEvent } from "@/lib/analytics/server";
+import { captureException } from "@/lib/observability";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -38,6 +40,13 @@ export async function POST(req: Request) {
       parsed.data.formats,
       { regenerationGuidance: parsed.data.guidance },
     );
+    for (const row of rows) {
+      captureServerEvent({
+        event: "content_generated",
+        distinctId: userId,
+        properties: { format: row.format },
+      });
+    }
     return NextResponse.json({
       ok: true,
       contentIds: rows.map((r) => r.id),
@@ -56,6 +65,7 @@ export async function POST(req: Request) {
       );
     }
     console.error("[generate] failed", err);
+    captureException(err, "content_generate");
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Generation failed" },
       { status: 500 },

@@ -38,22 +38,22 @@ export const PRICING_TIERS: PricingTier[] = [
     cadence: "/ month",
     tagline: "For builders ready to publish weekly.",
     features: [
-      "Unlimited content generation",
-      "3 source integrations",
+      "Expanded weekly AI budget",
+      "GitHub source integration",
       "20 manual uploads",
       "Calendar and voice calibration",
       "Hook variants and citations",
     ],
     cta: {
-      label: "Create account",
-      href: "/signup",
+      label: "Upgrade to Pro",
+      href: "/api/stripe/checkout",
     },
     featured: true,
   },
   {
     name: "Studio",
     slug: "studio",
-    price: "$99",
+    price: "Soon",
     cadence: "/ month",
     tagline: "For ghostwriters and multi-brand operators.",
     features: [
@@ -64,8 +64,8 @@ export const PRICING_TIERS: PricingTier[] = [
       "Priority generation",
     ],
     cta: {
-      label: "Create account",
-      href: "/signup",
+      label: "Coming soon",
+      href: "#",
     },
     featured: false,
   },

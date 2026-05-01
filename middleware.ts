@@ -25,6 +25,8 @@ const PUBLIC_PREFIXES = [
   "/sitemap",
   "/robots",
   "/api/auth",
+  "/api/health",
+  "/api/stripe/webhook",
   "/api/waitlist",
 ];
 

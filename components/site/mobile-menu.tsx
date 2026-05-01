@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { NavLinks } from "@/components/site/nav-links";
 import { Logo } from "@/components/site/logo";
 
@@ -69,9 +70,12 @@ export function MobileMenu({ user }: { user?: { name?: string | null; email?: st
 
           <div className="mt-12 space-y-3">
             {user ? (
-              <Button href="/dashboard" size="lg" className="w-full">
-                {user.name || user.email || "Dashboard"}
-              </Button>
+              <>
+                <Button href="/settings" size="lg" className="w-full">
+                  {user.name || user.email || "Account"}
+                </Button>
+                <SignOutButton size="lg" className="w-full" />
+              </>
             ) : (
               <>
                 <Button href="/signup" size="lg" className="w-full">

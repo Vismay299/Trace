@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Logo } from "@/components/site/logo";
 import { MobileMenu } from "@/components/site/mobile-menu";
 import { NavLinks } from "@/components/site/nav-links";
@@ -15,9 +16,12 @@ export async function Header() {
         <NavLinks authenticated={Boolean(user)} />
         <div className="hidden justify-end gap-3 md:flex">
           {user ? (
-            <Button href="/dashboard" variant="ghost">
-              {user.name || user.email || "Dashboard"}
-            </Button>
+            <>
+              <Button href="/settings" variant="ghost">
+                {user.name || user.email || "Account"}
+              </Button>
+              <SignOutButton />
+            </>
           ) : (
             <>
               <Button href="/login" variant="link">

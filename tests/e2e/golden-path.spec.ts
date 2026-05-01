@@ -33,5 +33,15 @@ test.describe("Phase 1 golden path", () => {
 
     await page.goto("/settings");
     await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Sign out" }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL(/\/login\?next=%2Fdashboard$/);
+    await expect(page.getByLabel("App")).toHaveCount(0);
   });
 });

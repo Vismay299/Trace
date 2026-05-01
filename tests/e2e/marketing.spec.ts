@@ -95,6 +95,30 @@ test.describe("Trace marketing site", () => {
     ).toBeVisible();
   });
 
+  test("keeps app navigation behind authentication", async ({ page }) => {
+    await gotoAppPage(page, "/");
+
+    await expect(page.getByLabel("Primary")).toHaveCount(1);
+    await expect(page.getByLabel("App")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Dashboard" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Sign out" }),
+    ).toHaveCount(0);
+
+    await gotoAppPage(page, "/dashboard");
+
+    await expect(page).toHaveURL(/\/login\?next=%2Fdashboard$/);
+    await expect(
+      page.getByRole("heading", { name: "Welcome back" }),
+    ).toBeVisible();
+    await expect(page.getByLabel("App")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Dashboard" }),
+    ).toHaveCount(0);
+  });
+
   test("serves SEO support routes", async ({ page }) => {
     const robots = await page.request.get("/robots.txt");
     expect(robots.ok()).toBeTruthy();

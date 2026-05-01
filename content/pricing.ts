@@ -45,8 +45,8 @@ export const PRICING_TIERS: PricingTier[] = [
       "Hook variants and citations",
     ],
     cta: {
-      label: "Upgrade to Pro",
-      href: "/api/stripe/checkout",
+      label: "Create account",
+      href: "/signup",
     },
     featured: true,
   },

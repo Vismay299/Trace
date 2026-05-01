@@ -35,6 +35,10 @@ test.describe("Trace marketing site", () => {
     await expect(
       page.getByRole("heading", { name: /The tiers are split/ }),
     ).toBeVisible();
+    await expect(page.locator('a[href="/api/stripe/checkout"]')).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Create account" }).first(),
+    ).toHaveAttribute("href", "/signup");
   });
 
   test("handles waitlist validation and success", async ({ page }) => {

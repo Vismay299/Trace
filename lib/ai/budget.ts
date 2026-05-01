@@ -185,6 +185,7 @@ export async function refundBudget(userId: string, tier: Tier): Promise<void> {
 }
 
 export type BudgetSnapshot = {
+  tier: UserTier;
   tier1: { used: number; limit: number };
   tier2: { used: number; limit: number };
   tier3: { used: number; limit: number };
@@ -196,11 +197,10 @@ export async function getBudgetSnapshot(
   userId: string,
   userTier?: UserTier,
 ): Promise<BudgetSnapshot> {
-  const b = await getOrCreateBudget(
-    userId,
-    userTier ?? (await getUserTier(userId)),
-  );
+  const tier = userTier ?? (await getUserTier(userId));
+  const b = await getOrCreateBudget(userId, tier);
   return {
+    tier,
     tier1: { used: b.tier1RequestsUsed, limit: b.tier1RequestsLimit },
     tier2: { used: b.tier2RequestsUsed, limit: b.tier2RequestsLimit },
     tier3: { used: b.tier3RequestsUsed, limit: b.tier3RequestsLimit },

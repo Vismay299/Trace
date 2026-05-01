@@ -18,6 +18,21 @@ vi.mock("../usage", () => ({
   logUsage: vi.fn(async () => {}),
 }));
 
+vi.mock("../routing", () => ({
+  resolveAiRouteDecision: vi.fn(async ({ requestedModel, tier }) => ({
+    provider: "openrouter",
+    modelId:
+      requestedModel ??
+      (tier === 1
+        ? "deepseek/deepseek-chat-v3"
+        : tier === 2
+          ? "qwen/qwen-2.5-72b-instruct"
+          : "google/gemini-2.5-flash"),
+    reason: requestedModel ? "explicit_model" : "primary",
+    source: requestedModel ? "explicit_model" : "default",
+  })),
+}));
+
 import { callAI, TASK_TIERS, MODELS } from "../client";
 import { AIBudgetExhaustedError, AIUpstreamError } from "../types";
 import * as budget from "../budget";

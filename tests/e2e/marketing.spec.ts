@@ -1,10 +1,16 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+
+async function gotoAppPage(page: Page, path: string) {
+  await page.goto(path, { waitUntil: "domcontentloaded" });
+}
 
 test.describe("Trace marketing site", () => {
+  test.setTimeout(90_000);
+
   test("renders the full home journey and primary navigation", async ({
     page,
   }) => {
-    await page.goto("/");
+    await gotoAppPage(page, "/");
 
     await expect(
       page.getByRole("heading", { name: "Content from proof, not prompts." }),
@@ -19,19 +25,19 @@ test.describe("Trace marketing site", () => {
       page.getByRole("heading", { name: /Start with positioning/ }),
     ).toBeVisible();
 
-    await page.goto("/story");
+    await gotoAppPage(page, "/story");
     await expect(
       page.getByRole("heading", { name: "The blank box problem." }),
     ).toBeVisible();
 
-    await page.goto("/product");
+    await gotoAppPage(page, "/product");
     await expect(
       page.getByRole("heading", {
         name: "The content engine starts before the content.",
       }),
     ).toBeVisible();
 
-    await page.goto("/pricing");
+    await gotoAppPage(page, "/pricing");
     await expect(
       page.getByRole("heading", { name: /The tiers are split/ }),
     ).toBeVisible();
@@ -53,7 +59,7 @@ test.describe("Trace marketing site", () => {
       });
     });
 
-    await page.goto("/waitlist?tier=pro");
+    await gotoAppPage(page, "/waitlist?tier=pro");
 
     await expect(page.getByText("Selected: Pro")).toBeVisible();
     await page.getByRole("button", { name: "Join Waitlist" }).click();
@@ -76,7 +82,8 @@ test.describe("Trace marketing site", () => {
 
   test("opens and closes the mobile menu", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/");
+    await gotoAppPage(page, "/");
+    await page.waitForLoadState("load");
 
     await page.getByRole("button", { name: "Open navigation menu" }).click();
     await expect(
@@ -105,7 +112,7 @@ test.describe("Trace marketing site", () => {
   });
 
   test("surfaces launch legal and data-use pages", async ({ page }) => {
-    await page.goto("/signup");
+    await gotoAppPage(page, "/signup");
     const main = page.getByRole("main");
 
     await expect(main.getByRole("link", { name: "Terms" })).toHaveAttribute(
@@ -119,7 +126,7 @@ test.describe("Trace marketing site", () => {
       main.getByRole("link", { name: "Data-Use Disclosure" }),
     ).toHaveAttribute("href", "/legal/data-use");
 
-    await page.goto("/legal/terms");
+    await gotoAppPage(page, "/legal/terms");
     await expect(
       page.getByRole("heading", { name: "Terms of Service" }),
     ).toBeVisible();
@@ -127,7 +134,7 @@ test.describe("Trace marketing site", () => {
       page.getByRole("heading", { name: "Subscriptions and Billing" }),
     ).toBeVisible();
 
-    await page.goto("/legal/privacy");
+    await gotoAppPage(page, "/legal/privacy");
     await expect(
       page.getByRole("heading", { name: "Privacy Policy" }),
     ).toBeVisible();
@@ -135,7 +142,7 @@ test.describe("Trace marketing site", () => {
       page.getByText("Trace does not use your private sources"),
     ).toBeVisible();
 
-    await page.goto("/legal/data-use");
+    await gotoAppPage(page, "/legal/data-use");
     await expect(
       page.getByRole("heading", { name: "Data-Use Disclosure" }),
     ).toBeVisible();

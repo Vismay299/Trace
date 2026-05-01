@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { UploadZone } from "./_components/upload-zone";
 import { FileList } from "./_components/file-list";
 import { FILE_LIMIT_PER_USER } from "@/lib/uploads";
+import { listUnifiedSources } from "@/lib/integrations/shared/connections";
+import { SourceConnectionsPanel } from "./_components/source-connections-panel";
 
 export const metadata = { title: "Sources" };
 
@@ -14,11 +16,14 @@ export default async function SourcesPage() {
   const userId = await getUserId();
   if (!userId) redirect("/login?next=/sources");
 
-  const rows = await db
-    .select()
-    .from(uploadedFiles)
-    .where(eq(uploadedFiles.userId, userId))
-    .orderBy(desc(uploadedFiles.createdAt));
+  const [rows, sources] = await Promise.all([
+    db
+      .select()
+      .from(uploadedFiles)
+      .where(eq(uploadedFiles.userId, userId))
+      .orderBy(desc(uploadedFiles.createdAt)),
+    listUnifiedSources(userId),
+  ]);
 
   return (
     <section className="mx-auto max-w-3xl px-6 py-12">
@@ -29,12 +34,19 @@ export default async function SourcesPage() {
         <p className="mt-3 text-text-muted">
           Upload real work — retros, READMEs, notes, transcripts. We chunk it,
           mine it for stories, and cite the source on every post we generate.
-          Phase 1 limit: {FILE_LIMIT_PER_USER} files. Integrations (GitHub,
-          Drive, Notion) ship in Phase 2.
+          Phase 1 limit: {FILE_LIMIT_PER_USER} files. GitHub connects in Phase
+          2, with Drive and Notion following in Phase 2.5.
         </p>
       </header>
 
-      <UploadZone />
+      <SourceConnectionsPanel initialConnections={sources.integrations} />
+
+      <div className="mt-10">
+        <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+          Manual uploads
+        </h2>
+        <UploadZone />
+      </div>
 
       <div className="mt-10">
         <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">

@@ -186,35 +186,49 @@ export const interviewSessions = pgTable("interview_sessions", {
 });
 
 // --- source_connections (defined in Phase 1, used Phase 2+) ---
-export const sourceConnections = pgTable("source_connections", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  sourceType: varchar("source_type", { length: 50 }).notNull(),
-  accessTokenEncrypted: text("access_token_encrypted"),
-  refreshTokenEncrypted: text("refresh_token_encrypted"),
-  tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
-  providerAccountId: varchar("provider_account_id", { length: 255 }),
-  providerInstallationId: varchar("provider_installation_id", { length: 255 }),
-  connectionStatus: varchar("connection_status", { length: 30 })
-    .default("not_connected")
-    .notNull(),
-  sourceMetadata: jsonb("source_metadata"),
-  syncCursor: jsonb("sync_cursor"),
-  lastSyncStartedAt: timestamp("last_sync_started_at", { withTimezone: true }),
-  lastSyncSucceededAt: timestamp("last_sync_succeeded_at", {
-    withTimezone: true,
+export const sourceConnections = pgTable(
+  "source_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    sourceType: varchar("source_type", { length: 50 }).notNull(),
+    accessTokenEncrypted: text("access_token_encrypted"),
+    refreshTokenEncrypted: text("refresh_token_encrypted"),
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    providerAccountId: varchar("provider_account_id", { length: 255 }),
+    providerInstallationId: varchar("provider_installation_id", {
+      length: 255,
+    }),
+    connectionStatus: varchar("connection_status", { length: 30 })
+      .default("not_connected")
+      .notNull(),
+    sourceMetadata: jsonb("source_metadata"),
+    syncCursor: jsonb("sync_cursor"),
+    lastSyncStartedAt: timestamp("last_sync_started_at", {
+      withTimezone: true,
+    }),
+    lastSyncSucceededAt: timestamp("last_sync_succeeded_at", {
+      withTimezone: true,
+    }),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    lastSyncError: text("last_sync_error"),
+    lastJobId: varchar("last_job_id", { length: 255 }),
+    selectedResources: jsonb("selected_resources"),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .default(now())
+      .notNull(),
+  },
+  (t) => ({
+    userTypeIdx: index("idx_source_connections_user_type").on(
+      t.userId,
+      t.sourceType,
+    ),
+    statusIdx: index("idx_source_connections_status").on(t.connectionStatus),
   }),
-  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
-  lastSyncError: text("last_sync_error"),
-  lastJobId: varchar("last_job_id", { length: 255 }),
-  selectedResources: jsonb("selected_resources"),
-  isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .default(now())
-    .notNull(),
-});
+);
 
 // --- source_chunks (no embeddings in Phase 1) ---
 export const sourceChunks = pgTable(
@@ -240,6 +254,7 @@ export const sourceChunks = pgTable(
     title: text("title"),
     content: text("content").notNull(),
     metadata: jsonb("metadata"),
+    isActive: boolean("is_active").default(true).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .default(now())
       .notNull(),

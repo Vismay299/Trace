@@ -18,6 +18,7 @@ ALTER TABLE "source_connections" ADD COLUMN IF NOT EXISTS "selected_resources" j
 ALTER TABLE "ai_usage_log" ADD COLUMN IF NOT EXISTS "provider" varchar(50) DEFAULT 'openrouter';
 ALTER TABLE "ai_usage_log" ADD COLUMN IF NOT EXISTS "route_decision_reason" varchar(100);
 ALTER TABLE "ai_usage_log" ADD COLUMN IF NOT EXISTS "latency_ms" integer;
+ALTER TABLE "source_chunks" ADD COLUMN IF NOT EXISTS "is_active" boolean DEFAULT true NOT NULL;
 
 CREATE INDEX IF NOT EXISTS "idx_source_connections_user_type" ON "source_connections" ("user_id", "source_type");
 CREATE INDEX IF NOT EXISTS "idx_source_connections_status" ON "source_connections" ("connection_status");

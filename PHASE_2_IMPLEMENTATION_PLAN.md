@@ -487,8 +487,8 @@ Update this table as each segment is completed. Format: `✅ done` · `🔄 in p
 | 31 | Billing schema and Stripe domain model                                  | ✅ done | 2026-05-01     | Stripe fields, launch plan mapping, webhook reconciliation helpers, billing tests. |
 | 32 | Pricing, checkout, webhook lifecycle, and Pro gating                    | ✅ done | 2026-05-01     | Checkout/portal/webhook routes, Pro budget enforcement, Studio coming soon, Redo Strategy. |
 | 33 | Async job runtime with Redis + BullMQ                                   | ✅ done | 2026-05-01     | Shared queues, worker entrypoint, status API, retry/error helpers, job tests. |
-| 34 | Source integration framework and sync status APIs                       | ⬜     |                |       |
-| 35 | GitHub connection flow and repo selection                               | ⬜     |                |       |
+| 34 | Source integration framework and sync status APIs                       | ✅ done | 2026-05-01     | Unified sources API, connection states, sync/status routes, shared source UI. |
+| 35 | GitHub connection flow and repo selection                               | ✅ done | 2026-05-01     | GitHub OAuth, encrypted token storage, repo loading/prioritization, explicit selection and modify flow. |
 | 36 | GitHub ingestion, normalization, and meaningful-activity filters        | ⬜     |                |       |
 | 37 | GitHub auto-sync, source-aware weekly context, and Ship-to-Post triggers | ⬜     |                |       |
 | 38 | Shared Google OAuth flow and Drive selector                             | ⬜ 2.5 |                | Deferred |

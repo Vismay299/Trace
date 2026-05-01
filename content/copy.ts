@@ -23,6 +23,17 @@ export const NAV_LINKS = [
   { href: "/pricing", label: "Pricing" },
 ];
 
+export const APP_NAV_LINKS = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/strategy", label: "Strategy" },
+  { href: "/sources", label: "Sources" },
+  { href: "/mine", label: "Mine" },
+  { href: "/content", label: "Drafts" },
+  { href: "/calendar", label: "Calendar" },
+  { href: "/weekly", label: "Weekly" },
+  { href: "/settings", label: "Settings" },
+];
+
 export const HERO_COPY = {
   eyebrow: "YOU SHIP CODE. TRACE SHIPS YOUR STORY.",
   heading: "Content from proof, not prompts.",

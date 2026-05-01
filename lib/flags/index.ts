@@ -14,6 +14,16 @@ export const FEATURE_FLAGS = [
 export type FeatureFlag = (typeof FEATURE_FLAGS)[number];
 type EnvInput = Record<string, string | undefined>;
 
+export type LaunchFlags = {
+  betaGate: boolean;
+  billing: boolean;
+  githubSync: boolean;
+  calendar: boolean;
+  shipToPost: boolean;
+  adminAiOps: boolean;
+  nimRouting: boolean;
+};
+
 const envKeys: Record<FeatureFlag, string> = {
   billing: "TRACE_FEATURE_BILLING",
   github_sync: "TRACE_FEATURE_GITHUB_SYNC",
@@ -34,23 +44,41 @@ export function isFeatureEnabled(
   return env[envKeys[flag]] === "true";
 }
 
+export function getLaunchFlags(env: EnvInput = process.env): LaunchFlags {
+  return {
+    betaGate: envFlag(env, "TRACE_FEATURE_BETA_GATE"),
+    billing: envFlag(env, "TRACE_FEATURE_BILLING"),
+    githubSync: envFlag(env, "TRACE_FEATURE_GITHUB_SYNC"),
+    calendar: envFlag(env, "TRACE_FEATURE_CALENDAR"),
+    shipToPost: envFlag(env, "TRACE_FEATURE_SHIP_TO_POST"),
+    adminAiOps: envFlag(env, "TRACE_FEATURE_ADMIN_AI_OPS"),
+    nimRouting: envFlag(env, "TRACE_FEATURE_NIM_ROUTING"),
+  };
+}
+
 export function featureFlagSnapshot(env: EnvInput = process.env) {
   return Object.fromEntries(
     FEATURE_FLAGS.map((flag) => [flag, isFeatureEnabled(flag, env)]),
   ) as Record<FeatureFlag, boolean>;
 }
 
-export function isAdminEmail(email?: string | null): boolean {
+export function isAdminEmail(
+  email?: string | null,
+  env: EnvInput = process.env,
+): boolean {
   if (!email) return false;
-  return csv(process.env.TRACE_ADMIN_EMAILS).includes(
+  return csv(env.TRACE_ADMIN_EMAILS).includes(
     email.trim().toLowerCase(),
   );
 }
 
-export function isBetaAllowed(email?: string | null): boolean {
-  if (!isFeatureEnabled("beta_gate")) return true;
-  if (isAdminEmail(email)) return true;
-  return csv(process.env.TRACE_BETA_ALLOWED_EMAILS).includes(
+export function isBetaAllowed(
+  email?: string | null,
+  env: EnvInput = process.env,
+): boolean {
+  if (!isFeatureEnabled("beta_gate", env)) return true;
+  if (isAdminEmail(email, env)) return true;
+  return csv(env.TRACE_BETA_ALLOWED_EMAILS).includes(
     (email ?? "").trim().toLowerCase(),
   );
 }
@@ -58,14 +86,20 @@ export function isBetaAllowed(email?: string | null): boolean {
 export function isBetaSignupAllowed({
   email,
   accessCode,
+  env = process.env,
 }: {
   email?: string | null;
   accessCode?: string | null;
+  env?: EnvInput;
 }): boolean {
-  if (isBetaAllowed(email)) return true;
+  if (isBetaAllowed(email, env)) return true;
   const normalizedCode = accessCode?.trim().toLowerCase();
   if (!normalizedCode) return false;
-  return csv(process.env.TRACE_BETA_ACCESS_CODES).includes(normalizedCode);
+  return csv(env.TRACE_BETA_ACCESS_CODES).includes(normalizedCode);
+}
+
+function envFlag(env: EnvInput, key: string) {
+  return env[key]?.trim().toLowerCase() === "true";
 }
 
 function csv(value?: string) {

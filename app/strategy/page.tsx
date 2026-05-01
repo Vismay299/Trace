@@ -14,13 +14,14 @@ export const metadata = {
 export default async function StrategyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ firstRun?: string }>;
+  searchParams: Promise<{ firstRun?: string; plan?: string }>;
 }) {
   const userId = await getUserId();
   if (!userId) redirect("/login?next=/strategy");
 
   const params = await searchParams;
   const firstRun = params.firstRun === "1";
+  const proIntent = params.plan === "pro";
 
   const doc = await getStrategy(userId);
   if (!doc) {
@@ -38,6 +39,7 @@ export default async function StrategyPage({
       </section>
     );
   }
+  if (proIntent) redirect("/checkout");
 
   // Sample posts are persisted as generated_content rows with no story_seed_id.
   const samples = await db

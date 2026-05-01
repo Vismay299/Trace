@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { LiveTranscript } from "@/components/voice/live-transcript";
@@ -46,6 +46,8 @@ export function InterviewChat({
   initialIsComplete: boolean;
 }) {
   const router = useRouter();
+  const params = useSearchParams();
+  const plan = params.get("plan");
   const [question, setQuestion] = useState<Question | null>(initialQuestion);
   const [progress, setProgress] = useState<Progress>(initialProgress);
   const [pendingFollowup, setPendingFollowup] = useState<Followup | null>(null);
@@ -137,7 +139,7 @@ export function InterviewChat({
       setCompleting(false);
       return;
     }
-    router.push("/strategy?firstRun=1");
+    router.push(`/strategy?firstRun=1${plan === "pro" ? "&plan=pro" : ""}`);
   };
 
   if (!question || isComplete) {
@@ -259,6 +261,7 @@ export function InterviewChat({
                 .then((data) => {
                   setQuestion(data.currentQuestion ?? question);
                   setProgress(data.progress);
+                  setIsComplete(Boolean(data.isComplete));
                 });
             }}
           >

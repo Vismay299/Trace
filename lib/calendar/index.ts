@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   contentCalendar,
@@ -53,6 +53,7 @@ export async function listUnscheduledDrafts(userId: string) {
       and(
         eq(generatedContent.userId, userId),
         eq(generatedContent.status, "draft"),
+        isNull(generatedContent.scheduledFor),
       ),
     )
     .orderBy(desc(generatedContent.createdAt))
@@ -79,16 +80,49 @@ export async function scheduleGeneratedContent({
     throw new Error("Draft not found.");
 
   const dateOnly = scheduledDate.slice(0, 10);
+  const title =
+    content.contentMetadata?.title ??
+    content.content.split("\n").find(Boolean)?.slice(0, 140) ??
+    "Draft";
+
+  const [existing] = await db
+    .select()
+    .from(contentCalendar)
+    .where(
+      and(
+        eq(contentCalendar.userId, userId),
+        eq(contentCalendar.generatedContentId, content.id),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    const [item] = await db
+      .update(contentCalendar)
+      .set({
+        storySeedId: content.storySeedId,
+        title,
+        description: content.sourceCitation,
+        scheduledDate: dateOnly,
+        platform: platform ?? (content.format as CalendarPlatform),
+        sourceOrigin: "generated_content",
+        status: "scheduled",
+        metadata: { contentStatus: content.status, rescheduled: true },
+      })
+      .where(eq(contentCalendar.id, existing.id))
+      .returning();
+
+    await markDraftScheduled(content.id, dateOnly);
+    return item;
+  }
+
   const [item] = await db
     .insert(contentCalendar)
     .values({
       userId,
       generatedContentId,
       storySeedId: content.storySeedId,
-      title:
-        content.contentMetadata?.title ??
-        content.content.split("\n").find(Boolean)?.slice(0, 140) ??
-        "Draft",
+      title,
       description: content.sourceCitation,
       scheduledDate: dateOnly,
       platform: platform ?? (content.format as CalendarPlatform),
@@ -98,13 +132,7 @@ export async function scheduleGeneratedContent({
     })
     .returning();
 
-  await db
-    .update(generatedContent)
-    .set({
-      scheduledFor: new Date(`${dateOnly}T12:00:00.000Z`),
-      updatedAt: new Date(),
-    })
-    .where(eq(generatedContent.id, content.id));
+  await markDraftScheduled(content.id, dateOnly);
 
   return item;
 }
@@ -132,6 +160,12 @@ export async function updateCalendarItem({
     .where(and(eq(contentCalendar.id, id), eq(contentCalendar.userId, userId)))
     .returning();
   if (!item) throw new Error("Calendar item not found.");
+  if (item.generatedContentId && scheduledDate) {
+    await markDraftScheduled(item.generatedContentId, scheduledDate.slice(0, 10));
+  }
+  if (item.generatedContentId && status === "cancelled") {
+    await markDraftUnscheduled(item.generatedContentId);
+  }
   return item;
 }
 
@@ -141,7 +175,30 @@ export async function deleteCalendarItem(userId: string, id: string) {
     .where(and(eq(contentCalendar.id, id), eq(contentCalendar.userId, userId)))
     .returning();
   if (!item) throw new Error("Calendar item not found.");
+  if (item.generatedContentId) {
+    await markDraftUnscheduled(item.generatedContentId);
+  }
   return item;
+}
+
+async function markDraftScheduled(generatedContentId: string, dateOnly: string) {
+  await db
+    .update(generatedContent)
+    .set({
+      scheduledFor: new Date(`${dateOnly}T12:00:00.000Z`),
+      updatedAt: new Date(),
+    })
+    .where(eq(generatedContent.id, generatedContentId));
+}
+
+async function markDraftUnscheduled(generatedContentId: string) {
+  await db
+    .update(generatedContent)
+    .set({
+      scheduledFor: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(generatedContent.id, generatedContentId));
 }
 
 export async function createPlannedCalendarItem({

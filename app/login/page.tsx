@@ -6,7 +6,13 @@ export const metadata = {
   title: "Sign in",
 };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
+  const params = await searchParams;
+
   return (
     <section className="mx-auto flex min-h-[calc(100svh-12rem)] max-w-md flex-col justify-center px-6 py-16">
       <h1 className="text-3xl font-medium tracking-tight text-text">
@@ -22,7 +28,10 @@ export default function LoginPage() {
       </div>
       <p className="mt-8 text-sm text-text-muted">
         New here?{" "}
-        <Link href="/signup" className="text-accent hover:underline">
+        <Link
+          href={params.plan === "pro" ? "/signup?plan=pro" : "/signup"}
+          className="text-accent hover:underline"
+        >
           Create an account
         </Link>
       </p>

@@ -5,7 +5,7 @@
  */
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { sourceChunks, uploadedFiles } from "@/lib/db/schema";
+import { sourceChunks, uploadedFiles, users } from "@/lib/db/schema";
 import {
   fileTypeOf,
   isAllowedExtension,
@@ -15,7 +15,9 @@ import { chunkText } from "@/lib/integrations/chunker";
 import { normalizeCodingConversation } from "@/lib/integrations/claude-code/normalize";
 import { deleteObject, objectKeyFor, putObject } from "@/lib/storage/supabase";
 
-export const FILE_LIMIT_PER_USER = 10;
+export const FREE_FILE_LIMIT = 5;
+export const PRO_FILE_LIMIT = 20;
+export const FILE_LIMIT_PER_USER = PRO_FILE_LIMIT;
 export const FILE_SIZE_LIMIT_BYTES = 12 * 1024 * 1024; // 12 MB
 
 export class UploadError extends Error {
@@ -27,17 +29,29 @@ export class UploadError extends Error {
 }
 
 export async function ensureQuota(userId: string): Promise<number> {
-  const [{ count }] = await db
-    .select({ count: sql<number>`COUNT(*)::int` })
-    .from(uploadedFiles)
-    .where(eq(uploadedFiles.userId, userId));
-  if (count >= FILE_LIMIT_PER_USER) {
+  const [[{ count }], user] = await Promise.all([
+    db
+      .select({ count: sql<number>`COUNT(*)::int` })
+      .from(uploadedFiles)
+      .where(eq(uploadedFiles.userId, userId)),
+    db
+      .select({ tier: users.tier })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1),
+  ]);
+  const limit = uploadLimitForTier(user[0]?.tier ?? "free");
+  if (count >= limit) {
     throw new UploadError(
       "QUOTA",
-      `You've reached the Phase 1 limit of ${FILE_LIMIT_PER_USER} files. Delete one to upload another.`,
+      `You've reached the ${limit}-file limit for your plan. Delete one or upgrade before uploading another.`,
     );
   }
   return count;
+}
+
+export function uploadLimitForTier(tier: string) {
+  return tier === "pro" ? PRO_FILE_LIMIT : FREE_FILE_LIMIT;
 }
 
 export async function ingestUpload(

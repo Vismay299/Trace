@@ -13,6 +13,7 @@ export async function GET() {
     const session = await getOrCreateSession(userId);
     const state = currentQuestionFor(session);
     return NextResponse.json({
+      currentQuestion: state.question,
       progress: state.progress,
       answeredCount: state.answeredCount,
       isComplete: session.isComplete,

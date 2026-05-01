@@ -73,7 +73,7 @@ export function StrategyView({
           {new Date(doc.updatedAt).toLocaleDateString()}. Version {doc.version}.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Button href="/strategy/pdf" variant="ghost">
+          <Button href="/api/strategy/pdf" variant="ghost">
             Download as PDF
           </Button>
           <RedoStrategyButton />

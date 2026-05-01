@@ -79,9 +79,14 @@ export async function PATCH(
       },
     });
     if (updated.added.length) {
-      await enqueueSourceSync(result.userId, result.connection.id).catch(
-        () => null,
-      );
+      const sync = await enqueueSourceSync(result.userId, result.connection.id)
+        .catch(() => null);
+      if (sync) {
+        return NextResponse.json({
+          connection: toSummary(sync.connection),
+          job: sync.job,
+        });
+      }
     }
     return NextResponse.json({ connection: toSummary(updated.connection) });
   }

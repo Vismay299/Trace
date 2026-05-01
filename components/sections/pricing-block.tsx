@@ -99,6 +99,14 @@ function PricingCta({
   loggedIn: boolean;
 }) {
   if (!loggedIn) {
+    if (tier.slug === "studio") {
+      return (
+        <Button href="/waitlist" variant="ghost" className="mt-auto w-full">
+          Join waitlist
+        </Button>
+      );
+    }
+
     return (
       <Button
         href={tier.cta.href}

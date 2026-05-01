@@ -17,7 +17,7 @@ const comparison = [
     pro: "3",
     studio: "Unlimited",
   },
-  { feature: "Manual uploads", strategy: "0", pro: "20", studio: "Unlimited" },
+  { feature: "Manual uploads", strategy: "5", pro: "20", studio: "Unlimited" },
   { feature: "Voice calibration", strategy: false, pro: true, studio: true },
   { feature: "Multi-brand", strategy: false, pro: false, studio: "Up to 5" },
 ];

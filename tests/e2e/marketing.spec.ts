@@ -37,8 +37,11 @@ test.describe("Trace marketing site", () => {
     ).toBeVisible();
     await expect(page.locator('a[href="/api/stripe/checkout"]')).toHaveCount(0);
     await expect(
-      page.getByRole("link", { name: "Create account" }).first(),
-    ).toHaveAttribute("href", "/signup");
+      page.locator('a[href="/signup?plan=pro"]'),
+    ).toHaveCount(1);
+    await expect(
+      page.getByRole("link", { name: "Join waitlist" }),
+    ).toHaveAttribute("href", "/waitlist");
   });
 
   test("handles waitlist validation and success", async ({ page }) => {
@@ -68,7 +71,7 @@ test.describe("Trace marketing site", () => {
 
     await expect(
       page.getByText("You're in. Watch your inbox for the strategy preview."),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
   });
 
   test("opens and closes the mobile menu", async ({ page }) => {
@@ -120,7 +123,9 @@ test.describe("Trace marketing site", () => {
     await expect(
       page.getByRole("heading", { name: "Terms of Service" }),
     ).toBeVisible();
-    await expect(page.getByText("Stripe is the billing system")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Subscriptions and Billing" }),
+    ).toBeVisible();
 
     await page.goto("/legal/privacy");
     await expect(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Pill } from "@/components/ui/pill";
 import type { SourceConnectionSummary } from "@/lib/integrations/shared/types";
 import type { RepoOption } from "@/lib/integrations/github/client";
+import type { JobStatus } from "@/lib/jobs/types";
 
 export function SourceConnectionsPanel({
   initialConnections,
@@ -31,9 +32,46 @@ export function SourceConnectionsPanel({
       ?.id ?? null,
   );
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [jobs, setJobs] = useState<Record<string, JobStatus | null>>({});
   const githubConnection = connections.find(
     (connection) => connection.sourceType === "github",
   );
+  const githubConnectionId = githubConnection?.id;
+  const githubConnectionStatus = githubConnection?.status;
+  const githubConnectionLastJobId = githubConnection?.lastJobId;
+
+  useEffect(() => {
+    if (!githubConnectionId) return;
+    if (githubConnectionStatus !== "syncing" && !githubConnectionLastJobId) {
+      return;
+    }
+
+    let cancelled = false;
+    const poll = async () => {
+      const res = await fetch(`/api/sources/${githubConnectionId}/status`);
+      if (!res.ok || cancelled) return;
+      const data = (await res.json()) as {
+        connection: SourceConnectionSummary;
+        job: JobStatus | null;
+      };
+      setConnections((current) =>
+        current.map((item) =>
+          item.id === data.connection.id ? data.connection : item,
+        ),
+      );
+      setJobs((current) => ({
+        ...current,
+        [githubConnectionId]: data.job,
+      }));
+    };
+
+    void poll();
+    const interval = window.setInterval(poll, 2500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [githubConnectionId, githubConnectionLastJobId, githubConnectionStatus]);
 
   async function refreshSources() {
     const res = await fetch("/api/sources");
@@ -52,12 +90,25 @@ export function SourceConnectionsPanel({
     if (res.ok) {
       const data = (await res.json()) as {
         connection: SourceConnectionSummary;
+        job?: { id: string; queue: string };
       };
       setConnections((current) =>
         current.map((item) =>
           item.id === data.connection.id ? data.connection : item,
         ),
       );
+      setJobs((current) => ({
+        ...current,
+        [connection.id]: data.job
+          ? ({
+              id: data.job.id,
+              queue: data.job.queue,
+              state: "waiting",
+              progress: 0,
+              attemptsMade: 0,
+            } as JobStatus)
+          : null,
+      }));
     }
     setBusyId(null);
   }
@@ -90,6 +141,7 @@ export function SourceConnectionsPanel({
           title="GitHub"
           icon={<Code2 className="size-5" aria-hidden />}
           connection={githubConnection}
+          job={githubConnection ? jobs[githubConnection.id] : null}
           busy={busyId === githubConnection?.id}
           onConnect={() => {
             window.location.href = "/api/sources/connect/github";
@@ -120,6 +172,7 @@ function SourceCard({
   title,
   icon,
   connection,
+  job,
   busy,
   onConnect,
   onSelect,
@@ -129,6 +182,7 @@ function SourceCard({
   title: string;
   icon: React.ReactNode;
   connection?: SourceConnectionSummary;
+  job?: JobStatus | null;
   busy: boolean;
   onConnect: () => void;
   onSelect: () => void;
@@ -157,6 +211,7 @@ function SourceCard({
           {connection?.lastSyncError ? (
             <p className="mt-2 text-sm text-danger">{connection.lastSyncError}</p>
           ) : null}
+          {connection ? <SyncStatus connection={connection} job={job} /> : null}
           {connection?.lastSyncSucceededAt ? (
             <p className="mt-2 text-xs text-text-dim">
               Last synced{" "}
@@ -176,7 +231,11 @@ function SourceCard({
               <IconButton
                 label="Sync"
                 onClick={onSync}
-                disabled={busy || !connection.selectedCount}
+                disabled={
+                  busy ||
+                  !connection.selectedCount ||
+                  connection.status === "syncing"
+                }
               >
                 {busy ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -192,6 +251,43 @@ function SourceCard({
         </div>
       </div>
     </article>
+  );
+}
+
+function SyncStatus({
+  connection,
+  job,
+}: {
+  connection: SourceConnectionSummary;
+  job?: JobStatus | null;
+}) {
+  if (connection.status === "syncing") {
+    return (
+      <p className="mt-2 text-sm text-text-muted">
+        Sync {job?.state ?? "queued"}.
+        {connection.lastJobId ? ` Job ${connection.lastJobId}.` : ""}
+      </p>
+    );
+  }
+
+  const lastStats = connection.syncCursor?.lastStats as
+    | {
+        reposScanned?: number;
+        artifactsSeen?: number;
+        insertedChunks?: number;
+        skippedLowSignal?: number;
+        shipToPostEnqueued?: number;
+      }
+    | undefined;
+  if (!lastStats) return null;
+
+  return (
+    <p className="mt-2 text-sm text-text-muted">
+      Last sync scanned {lastStats.reposScanned ?? 0} repos, added{" "}
+      {lastStats.insertedChunks ?? 0} chunks, skipped{" "}
+      {lastStats.skippedLowSignal ?? 0} low-signal items, and queued{" "}
+      {lastStats.shipToPostEnqueued ?? 0} Ship-to-Post drafts.
+    </p>
   );
 }
 

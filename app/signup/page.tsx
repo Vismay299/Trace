@@ -10,6 +10,7 @@ export const metadata = {
 type SignupPageProps = {
   searchParams: Promise<{
     code?: string;
+    plan?: string;
   }>;
 };
 
@@ -47,7 +48,10 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
       ) : null}
       <p className="mt-8 text-sm text-text-muted">
         Already have an account?{" "}
-        <Link href="/login" className="text-accent hover:underline">
+        <Link
+          href={params.plan === "pro" ? "/login?plan=pro" : "/login"}
+          className="text-accent hover:underline"
+        >
           Sign in
         </Link>
       </p>

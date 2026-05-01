@@ -23,6 +23,7 @@ export const PRICING_TIERS: PricingTier[] = [
       "30-minute onboarding interview",
       "Personal Brand Strategy Doc",
       "5 sample posts",
+      "5 manual uploads",
       "PDF download",
     ],
     cta: {
@@ -46,7 +47,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     cta: {
       label: "Create account",
-      href: "/signup",
+      href: "/signup?plan=pro",
     },
     featured: true,
   },
@@ -65,7 +66,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     cta: {
       label: "Coming soon",
-      href: "#",
+      href: "/waitlist",
     },
     featured: false,
   },

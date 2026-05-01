@@ -5,9 +5,15 @@ import { getUserId } from "@/lib/auth";
 import { getBudgetSnapshot } from "@/lib/ai/budget";
 import { db } from "@/lib/db";
 import {
+  contentCalendar,
   generatedContent,
+  interviewSessions,
   narrativePlans,
+  sourceChunks,
+  sourceConnections,
   storySeeds,
+  strategyDocs,
+  uploadedFiles,
   voiceSamples,
   weeklyCheckins,
 } from "@/lib/db/schema";
@@ -16,11 +22,37 @@ import { PillarBalanceChart } from "./_components/pillar-balance-chart";
 
 export const metadata = { title: "Dashboard" };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
   const userId = await getUserId();
   if (!userId) redirect("/login?next=/dashboard");
+  const params = await searchParams;
+  const wantsPro = params.plan === "pro";
 
-  const [[content], [voice], [checkins], budget, pillars, activity] =
+  const [[interview], [strategy]] = await Promise.all([
+    db
+      .select({ isComplete: interviewSessions.isComplete })
+      .from(interviewSessions)
+      .where(eq(interviewSessions.userId, userId))
+      .limit(1),
+    db
+      .select({ id: strategyDocs.id })
+      .from(strategyDocs)
+      .where(eq(strategyDocs.userId, userId))
+      .limit(1),
+  ]);
+
+  if (!interview?.isComplete) {
+    redirect(`/onboarding${wantsPro ? "?plan=pro" : ""}`);
+  }
+  if (!strategy) {
+    redirect(`/strategy?firstRun=1${wantsPro ? "&plan=pro" : ""}`);
+  }
+
+  const [[content], [voice], [checkins], budget, pillars, activity, setup] =
     await Promise.all([
       db
         .select({
@@ -55,6 +87,7 @@ export default async function DashboardPage() {
         .where(eq(generatedContent.userId, userId))
         .groupBy(storySeeds.pillarMatch),
       recentActivity(userId),
+      setupSnapshot(userId),
     ]);
 
   const voiceScore =
@@ -93,6 +126,50 @@ export default async function DashboardPage() {
         <Stat label="Published" value={content?.published ?? 0} />
         <Stat label="Voice score" value={voiceScore} />
       </div>
+
+      <section className="mt-6 rounded-card border border-border-strong bg-bg-elev p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-medium text-text">Launch checklist</h2>
+            <p className="mt-2 text-sm text-text-muted">
+              Move from strategy to sources, mined story seeds, drafts, and an
+              internal publishing plan.
+            </p>
+          </div>
+          <Link
+            href={nextAction(setup).href}
+            className="rounded-full border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent-soft"
+          >
+            {nextAction(setup).label}
+          </Link>
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <SetupCard
+            title="Strategy"
+            complete={setup.hasStrategy}
+            detail="Positioning and voice are ready."
+            href="/strategy"
+          />
+          <SetupCard
+            title="Sources"
+            complete={setup.sourceCount > 0}
+            detail={`${setup.sourceCount} source${setup.sourceCount === 1 ? "" : "s"} connected or uploaded.`}
+            href="/sources"
+          />
+          <SetupCard
+            title="Story seeds"
+            complete={setup.seedCount > 0}
+            detail={`${setup.seedCount} mined seed${setup.seedCount === 1 ? "" : "s"}.`}
+            href="/mine"
+          />
+          <SetupCard
+            title="Schedule"
+            complete={setup.scheduledCount > 0}
+            detail={`${setup.draftCount} draft${setup.draftCount === 1 ? "" : "s"}, ${setup.scheduledCount} scheduled.`}
+            href={setup.draftCount > 0 ? "/calendar" : "/content"}
+          />
+        </div>
+      </section>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
         <section className="rounded-card border border-border-strong bg-bg-elev p-6">
@@ -164,6 +241,41 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+function SetupCard({
+  title,
+  complete,
+  detail,
+  href,
+}: {
+  title: string;
+  complete: boolean;
+  detail: string;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="block rounded-card border border-border-strong bg-bg p-4 hover:border-accent"
+    >
+      <p className="text-xs uppercase tracking-[0.18em] text-text-dim">
+        {complete ? "Done" : "Next"} · {title}
+      </p>
+      <p className="mt-2 text-sm text-text-muted">{detail}</p>
+    </Link>
+  );
+}
+
+type SetupSnapshot = Awaited<ReturnType<typeof setupSnapshot>>;
+
+function nextAction(setup: SetupSnapshot) {
+  if (!setup.hasStrategy) return { href: "/strategy", label: "Generate strategy" };
+  if (setup.sourceCount === 0) return { href: "/sources", label: "Add sources" };
+  if (setup.seedCount === 0) return { href: "/mine", label: "Mine story seeds" };
+  if (setup.draftCount === 0) return { href: "/mine", label: "Create first draft" };
+  if (setup.scheduledCount === 0) return { href: "/calendar", label: "Schedule drafts" };
+  return { href: "/weekly", label: "Start weekly check-in" };
+}
+
 async function recentActivity(userId: string) {
   const [content, checkins, plans] = await Promise.all([
     db
@@ -217,4 +329,54 @@ async function recentActivity(userId: string) {
     .sort((a, b) => b.at.getTime() - a.at.getTime())
     .slice(0, 20)
     .map((item) => ({ ...item, date: item.at.toISOString().slice(0, 10) }));
+}
+
+async function setupSnapshot(userId: string) {
+  const [
+    [strategy],
+    [uploads],
+    [connections],
+    [chunks],
+    [seeds],
+    [drafts],
+    [scheduled],
+  ] = await Promise.all([
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(strategyDocs)
+      .where(eq(strategyDocs.userId, userId)),
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(uploadedFiles)
+      .where(eq(uploadedFiles.userId, userId)),
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(sourceConnections)
+      .where(eq(sourceConnections.userId, userId)),
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(sourceChunks)
+      .where(eq(sourceChunks.userId, userId)),
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(storySeeds)
+      .where(eq(storySeeds.userId, userId)),
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(generatedContent)
+      .where(eq(generatedContent.userId, userId)),
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(contentCalendar)
+      .where(eq(contentCalendar.userId, userId)),
+  ]);
+
+  return {
+    hasStrategy: Number(strategy?.total ?? 0) > 0,
+    sourceCount: Number(uploads?.total ?? 0) + Number(connections?.total ?? 0),
+    chunkCount: Number(chunks?.total ?? 0),
+    seedCount: Number(seeds?.total ?? 0),
+    draftCount: Number(drafts?.total ?? 0),
+    scheduledCount: Number(scheduled?.total ?? 0),
+  };
 }

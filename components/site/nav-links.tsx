@@ -2,29 +2,39 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_LINKS } from "@/content/copy";
+import { APP_NAV_LINKS, NAV_LINKS } from "@/content/copy";
 import { cn } from "@/lib/cn";
 
 type NavLinksProps = {
   mobile?: boolean;
+  authenticated?: boolean;
   onNavigate?: () => void;
 };
 
-export function NavLinks({ mobile = false, onNavigate }: NavLinksProps) {
+export function NavLinks({
+  mobile = false,
+  authenticated = false,
+  onNavigate,
+}: NavLinksProps) {
   const pathname = usePathname();
+  const links = authenticated ? APP_NAV_LINKS : NAV_LINKS;
 
   return (
     <nav
-      aria-label="Primary"
+      aria-label={authenticated ? "App" : "Primary"}
       className={cn(
         mobile
-          ? "flex flex-col gap-6 text-3xl"
-          : "hidden items-center gap-10 md:flex",
+          ? "flex flex-col gap-5 text-3xl"
+          : authenticated
+            ? "hidden items-center gap-5 text-xs md:flex lg:gap-7"
+            : "hidden items-center gap-10 md:flex",
         "font-mono uppercase text-text-dim",
       )}
     >
-      {NAV_LINKS.map((link) => {
-        const active = pathname === link.href;
+      {links.map((link) => {
+        const active =
+          pathname === link.href ||
+          (link.href !== "/dashboard" && pathname.startsWith(`${link.href}/`));
 
         return (
           <Link

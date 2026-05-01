@@ -17,7 +17,6 @@ const PUBLIC_PREFIXES = [
   "/story",
   "/legal",
   "/waitlist",
-  "/_dev",
   "/_next",
   "/favicon",
   "/icon",
@@ -44,6 +43,7 @@ export function middleware(req: NextRequest) {
   // Allow exact landing page or any explicitly-public prefix.
   if (
     pathname === "/" ||
+    (pathname.startsWith("/_dev") && process.env.NODE_ENV !== "production") ||
     PUBLIC_PREFIXES.some((p) => p !== "/" && pathname.startsWith(p))
   ) {
     return NextResponse.next();

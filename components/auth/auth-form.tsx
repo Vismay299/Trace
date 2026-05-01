@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { buildContinuePath } from "@/lib/auth/paths";
 
 type Mode = "signup" | "login";
 
@@ -21,6 +22,8 @@ export function AuthForm({
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/dashboard";
+  const plan = params.get("plan");
+  const continuePath = buildContinuePath({ next, plan });
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -81,7 +84,13 @@ export function AuthForm({
         setIsLoading(false);
         return;
       }
-      router.push(mode === "signup" ? "/onboarding" : next);
+      router.push(
+        mode === "signup"
+          ? plan === "pro"
+            ? "/onboarding?plan=pro"
+            : "/onboarding"
+          : continuePath,
+      );
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error.");
@@ -176,7 +185,7 @@ export function AuthForm({
             <Button
               variant="ghost"
               className="w-full"
-              onClick={() => signIn("google", { callbackUrl: next })}
+              onClick={() => signIn("google", { callbackUrl: continuePath })}
             >
               Continue with Google
             </Button>
@@ -186,7 +195,7 @@ export function AuthForm({
             <Button
               variant="ghost"
               className="w-full"
-              onClick={() => signIn("github", { callbackUrl: next })}
+              onClick={() => signIn("github", { callbackUrl: continuePath })}
             >
               Continue with GitHub
             </Button>

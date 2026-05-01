@@ -12,7 +12,7 @@ export async function Header() {
     <header className="sticky top-0 z-40 border-b border-border bg-bg/82 backdrop-blur-xl">
       <div className="mx-auto grid h-20 max-w-7xl grid-cols-[1fr_auto] items-center px-5 md:grid-cols-[1fr_auto_1fr] lg:px-8">
         <Logo />
-        <NavLinks />
+        <NavLinks authenticated={Boolean(user)} />
         <div className="hidden justify-end gap-3 md:flex">
           {user ? (
             <Button href="/dashboard" variant="ghost">

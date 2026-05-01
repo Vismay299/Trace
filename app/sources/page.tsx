@@ -2,11 +2,11 @@ import { redirect } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { uploadedFiles } from "@/lib/db/schema";
+import { uploadedFiles, users } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
 import { UploadZone } from "./_components/upload-zone";
 import { FileList } from "./_components/file-list";
-import { FILE_LIMIT_PER_USER } from "@/lib/uploads";
+import { uploadLimitForTier } from "@/lib/uploads";
 import { listUnifiedSources } from "@/lib/integrations/shared/connections";
 import { SourceConnectionsPanel } from "./_components/source-connections-panel";
 
@@ -16,14 +16,20 @@ export default async function SourcesPage() {
   const userId = await getUserId();
   if (!userId) redirect("/login?next=/sources");
 
-  const [rows, sources] = await Promise.all([
+  const [rows, sources, [user]] = await Promise.all([
     db
       .select()
       .from(uploadedFiles)
       .where(eq(uploadedFiles.userId, userId))
       .orderBy(desc(uploadedFiles.createdAt)),
     listUnifiedSources(userId),
+    db
+      .select({ tier: users.tier })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1),
   ]);
+  const fileLimit = uploadLimitForTier(user?.tier ?? "free");
 
   return (
     <section className="mx-auto max-w-3xl px-6 py-12">
@@ -34,8 +40,8 @@ export default async function SourcesPage() {
         <p className="mt-3 text-text-muted">
           Upload real work — retros, READMEs, notes, transcripts. We chunk it,
           mine it for stories, and cite the source on every post we generate.
-          Phase 1 limit: {FILE_LIMIT_PER_USER} files. GitHub connects in Phase
-          2, with Drive and Notion following in Phase 2.5.
+          Your current plan allows {fileLimit} manual uploads. GitHub sync is
+          available for launch; Drive and Notion are planned after launch.
         </p>
       </header>
 
@@ -50,7 +56,7 @@ export default async function SourcesPage() {
 
       <div className="mt-10">
         <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-          Files ({rows.length}/{FILE_LIMIT_PER_USER})
+          Files ({rows.length}/{fileLimit})
         </h2>
         <FileList
           rows={rows.map((r) => ({

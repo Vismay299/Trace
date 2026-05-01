@@ -60,7 +60,11 @@ export function MobileMenu({ user }: { user?: { name?: string | null; email?: st
           </div>
 
           <div className="mt-20">
-            <NavLinks mobile onNavigate={() => setOpen(false)} />
+            <NavLinks
+              mobile
+              authenticated={Boolean(user)}
+              onNavigate={() => setOpen(false)}
+            />
           </div>
 
           <div className="mt-12 space-y-3">

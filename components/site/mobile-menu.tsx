@@ -11,6 +11,8 @@ import { Logo } from "@/components/site/logo";
 export function MobileMenu({ user }: { user?: { name?: string | null; email?: string | null } | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const authed = Boolean(user);
+  const wrapperHidden = authed ? "xl:hidden" : "md:hidden";
 
   useEffect(() => {
     setOpen(false);
@@ -35,7 +37,7 @@ export function MobileMenu({ user }: { user?: { name?: string | null; email?: st
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <div className={wrapperHidden}>
       <button
         type="button"
         aria-label="Open navigation menu"

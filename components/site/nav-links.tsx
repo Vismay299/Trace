@@ -26,7 +26,7 @@ export function NavLinks({
         mobile
           ? "flex flex-col gap-5 text-3xl"
           : authenticated
-            ? "hidden items-center gap-5 text-xs md:flex lg:gap-7"
+            ? "hidden items-center gap-5 text-xs xl:flex"
             : "hidden items-center gap-10 md:flex",
         "font-mono uppercase text-text-dim",
       )}

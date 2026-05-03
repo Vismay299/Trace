@@ -22,9 +22,12 @@ import type { JobStatus } from "@/lib/jobs/types";
 
 export function SourceConnectionsPanel({
   initialConnections,
+  tier,
 }: {
   initialConnections: SourceConnectionSummary[];
+  tier: string;
 }) {
+  const isPro = tier === "pro";
   const router = useRouter();
   const [connections, setConnections] = useState(initialConnections);
   const [activeConnectionId, setActiveConnectionId] = useState<string | null>(
@@ -131,40 +134,79 @@ export function SourceConnectionsPanel({
           Connected sources
         </h2>
         <p className="mt-2 text-sm text-text-muted">
-          GitHub is available for Phase 2 launch. Drive and Notion remain
-          deferred until Phase 2.5.
+          {isPro
+            ? "GitHub sync is available on your plan. Drive and Notion are coming in Phase 2.5."
+            : "GitHub, Drive, and Notion integrations are available on the Pro plan."}
         </p>
       </div>
 
       <div className="grid gap-4">
-        <SourceCard
-          title="GitHub"
-          icon={<Code2 className="size-5" aria-hidden />}
-          connection={githubConnection}
-          job={githubConnection ? jobs[githubConnection.id] : null}
-          busy={busyId === githubConnection?.id}
-          onConnect={() => {
-            window.location.href = "/api/sources/connect/github";
-          }}
-          onSelect={() => setActiveConnectionId(githubConnection?.id ?? null)}
-          onSync={() => githubConnection && syncNow(githubConnection)}
-          onDisconnect={() => githubConnection && disconnect(githubConnection)}
-        />
-        {githubConnection && activeConnectionId === githubConnection.id ? (
-          <RepoSelector
-            connection={githubConnection}
-            onSaved={(connection) => {
-              setConnections((current) =>
-                current.map((item) =>
-                  item.id === connection.id ? connection : item,
-                ),
-              );
-              router.refresh();
-            }}
+        {isPro ? (
+          <>
+            <SourceCard
+              title="GitHub"
+              icon={<Code2 className="size-5" aria-hidden />}
+              connection={githubConnection}
+              job={githubConnection ? jobs[githubConnection.id] : null}
+              busy={busyId === githubConnection?.id}
+              onConnect={() => {
+                window.location.href = "/api/sources/connect/github";
+              }}
+              onSelect={() => setActiveConnectionId(githubConnection?.id ?? null)}
+              onSync={() => githubConnection && syncNow(githubConnection)}
+              onDisconnect={() => githubConnection && disconnect(githubConnection)}
+            />
+            {githubConnection && activeConnectionId === githubConnection.id ? (
+              <RepoSelector
+                connection={githubConnection}
+                onSaved={(connection) => {
+                  setConnections((current) =>
+                    current.map((item) =>
+                      item.id === connection.id ? connection : item,
+                    ),
+                  );
+                  router.refresh();
+                }}
+              />
+            ) : null}
+          </>
+        ) : (
+          <LockedSourceCard
+            title="GitHub"
+            icon={<Code2 className="size-5" aria-hidden />}
+            description="Sync commits, PRs, and READMEs directly into Trace."
           />
-        ) : null}
+        )}
       </div>
     </section>
+  );
+}
+
+function LockedSourceCard({
+  title,
+  icon,
+  description,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  description: string;
+}) {
+  return (
+    <article className="rounded-card border border-border-strong bg-bg-elev p-5 opacity-60">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <span className="text-text-muted">{icon}</span>
+            <h3 className="text-lg font-medium text-text">{title}</h3>
+            <Pill>Pro only</Pill>
+          </div>
+          <p className="mt-3 text-sm text-text-muted">{description}</p>
+        </div>
+        <Button href="/settings?upgrade=1" variant="ghost" className="shrink-0">
+          Upgrade to Pro
+        </Button>
+      </div>
+    </article>
   );
 }
 

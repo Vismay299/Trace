@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireUserId } from "@/lib/auth";
+import { ForbiddenError, requireProTier, requireUserId } from "@/lib/auth";
 import { isSourceType } from "@/lib/integrations/shared/types";
 import {
   buildGitHubAuthorizeUrl,
@@ -13,10 +13,19 @@ export async function GET(
   req: Request,
   ctx: { params: Promise<{ type: string }> },
 ) {
+  let userId: string;
   try {
-    await requireUserId();
+    userId = await requireUserId();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  try {
+    await requireProTier(userId);
+  } catch (err) {
+    if (err instanceof ForbiddenError) {
+      return NextResponse.json({ error: "Pro plan required to connect sources." }, { status: 403 });
+    }
+    throw err;
   }
 
   const { type } = await ctx.params;

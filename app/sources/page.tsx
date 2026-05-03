@@ -31,6 +31,8 @@ export default async function SourcesPage() {
   ]);
   const fileLimit = uploadLimitForTier(user?.tier ?? "free");
 
+  const tier = user?.tier ?? "free";
+
   return (
     <section className="mx-auto max-w-3xl px-6 py-12">
       <header className="mb-8">
@@ -40,12 +42,12 @@ export default async function SourcesPage() {
         <p className="mt-3 text-text-muted">
           Upload real work — retros, READMEs, notes, transcripts. We chunk it,
           mine it for stories, and cite the source on every post we generate.
-          Your current plan allows {fileLimit} manual uploads. GitHub sync is
-          available for launch; Drive and Notion are planned after launch.
+          Your current plan allows {fileLimit} manual uploads. GitHub sync and
+          integrations require Pro.
         </p>
       </header>
 
-      <SourceConnectionsPanel initialConnections={sources.integrations} />
+      <SourceConnectionsPanel initialConnections={sources.integrations} tier={tier} />
 
       <div className="mt-10">
         <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">

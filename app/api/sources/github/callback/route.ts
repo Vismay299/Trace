@@ -18,6 +18,12 @@ export async function GET(req: Request) {
   } catch {
     return redirectWithError(req, "unauthorized");
   }
+  try {
+    const { requireProTier } = await import("@/lib/auth");
+    await requireProTier(userId);
+  } catch {
+    return redirectWithError(req, "pro_required");
+  }
 
   const url = new URL(req.url);
   const code = url.searchParams.get("code");

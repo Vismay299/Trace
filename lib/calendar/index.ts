@@ -31,7 +31,15 @@ export async function listCalendarItems({
 
   return db
     .select({
-      calendar: contentCalendar,
+      calendar: {
+        id: contentCalendar.id,
+        userId: contentCalendar.userId,
+        generatedContentId: contentCalendar.generatedContentId,
+        scheduledDate: contentCalendar.scheduledDate,
+        platform: contentCalendar.platform,
+        status: contentCalendar.status,
+        createdAt: contentCalendar.createdAt,
+      },
       content: generatedContent,
       seed: storySeeds,
     })
@@ -40,7 +48,7 @@ export async function listCalendarItems({
       generatedContent,
       eq(contentCalendar.generatedContentId, generatedContent.id),
     )
-    .leftJoin(storySeeds, eq(contentCalendar.storySeedId, storySeeds.id))
+    .leftJoin(storySeeds, eq(generatedContent.storySeedId, storySeeds.id))
     .where(and(...conditions))
     .orderBy(contentCalendar.scheduledDate, desc(contentCalendar.createdAt));
 }
@@ -86,7 +94,7 @@ export async function scheduleGeneratedContent({
     "Draft";
 
   const [existing] = await db
-    .select()
+    .select({ id: contentCalendar.id })
     .from(contentCalendar)
     .where(
       and(
@@ -100,20 +108,21 @@ export async function scheduleGeneratedContent({
     const [item] = await db
       .update(contentCalendar)
       .set({
-        storySeedId: content.storySeedId,
-        title,
-        description: content.sourceCitation,
         scheduledDate: dateOnly,
         platform: platform ?? (content.format as CalendarPlatform),
-        sourceOrigin: "generated_content",
         status: "scheduled",
-        metadata: { contentStatus: content.status, rescheduled: true },
       })
       .where(eq(contentCalendar.id, existing.id))
-      .returning();
+      .returning({
+        id: contentCalendar.id,
+        generatedContentId: contentCalendar.generatedContentId,
+        scheduledDate: contentCalendar.scheduledDate,
+        platform: contentCalendar.platform,
+        status: contentCalendar.status,
+      });
 
     await markDraftScheduled(content.id, dateOnly);
-    return item;
+    return { ...item, title, description: content.sourceCitation };
   }
 
   const [item] = await db
@@ -121,20 +130,21 @@ export async function scheduleGeneratedContent({
     .values({
       userId,
       generatedContentId,
-      storySeedId: content.storySeedId,
-      title,
-      description: content.sourceCitation,
       scheduledDate: dateOnly,
       platform: platform ?? (content.format as CalendarPlatform),
-      sourceOrigin: "generated_content",
       status: "scheduled",
-      metadata: { contentStatus: content.status },
     })
-    .returning();
+    .returning({
+      id: contentCalendar.id,
+      generatedContentId: contentCalendar.generatedContentId,
+      scheduledDate: contentCalendar.scheduledDate,
+      platform: contentCalendar.platform,
+      status: contentCalendar.status,
+    });
 
   await markDraftScheduled(content.id, dateOnly);
 
-  return item;
+  return { ...item, title, description: content.sourceCitation };
 }
 
 export async function updateCalendarItem({
@@ -158,7 +168,13 @@ export async function updateCalendarItem({
       ...(platform ? { platform } : {}),
     })
     .where(and(eq(contentCalendar.id, id), eq(contentCalendar.userId, userId)))
-    .returning();
+    .returning({
+      id: contentCalendar.id,
+      generatedContentId: contentCalendar.generatedContentId,
+      scheduledDate: contentCalendar.scheduledDate,
+      platform: contentCalendar.platform,
+      status: contentCalendar.status,
+    });
   if (!item) throw new Error("Calendar item not found.");
   if (item.generatedContentId && scheduledDate) {
     await markDraftScheduled(item.generatedContentId, scheduledDate.slice(0, 10));
@@ -173,7 +189,10 @@ export async function deleteCalendarItem(userId: string, id: string) {
   const [item] = await db
     .delete(contentCalendar)
     .where(and(eq(contentCalendar.id, id), eq(contentCalendar.userId, userId)))
-    .returning();
+    .returning({
+      id: contentCalendar.id,
+      generatedContentId: contentCalendar.generatedContentId,
+    });
   if (!item) throw new Error("Calendar item not found.");
   if (item.generatedContentId) {
     await markDraftUnscheduled(item.generatedContentId);
@@ -218,21 +237,29 @@ export async function createPlannedCalendarItem({
     .insert(contentCalendar)
     .values({
       userId,
-      storySeedId,
-      narrativePlanId,
-      title: post.title,
-      description: post.summary,
       scheduledDate: scheduledDate.slice(0, 10),
       platform: post.format,
-      sourceOrigin: "narrative_plan",
       status: "scheduled",
-      metadata: {
-        storyType: post.story_type,
-        pillarMatch: post.pillar_match,
-        sourceNote: post.source_note,
-        isAnchor: post.is_anchor ?? false,
-      },
     })
-    .returning();
-  return item;
+    .returning({
+      id: contentCalendar.id,
+      generatedContentId: contentCalendar.generatedContentId,
+      scheduledDate: contentCalendar.scheduledDate,
+      platform: contentCalendar.platform,
+      status: contentCalendar.status,
+    });
+  return {
+    ...item,
+    storySeedId,
+    narrativePlanId,
+    title: post.title,
+    description: post.summary,
+    sourceOrigin: "narrative_plan",
+    metadata: {
+      storyType: post.story_type,
+      pillarMatch: post.pillar_match,
+      sourceNote: post.source_note,
+      isAnchor: post.is_anchor ?? false,
+    },
+  };
 }

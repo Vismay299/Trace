@@ -17,33 +17,30 @@ import {
 import { callAI } from "@/lib/ai/client";
 import { loadPrompt } from "@/lib/ai/prompts";
 import { getCached, hashKey } from "@/lib/cache";
+import { getFewShotExamples } from "@/lib/voice/few-shot";
 
-const sampleSchema = z.object({
-  samples: z
+const sampleItemSchema = z.object({
+  format: z.enum(["linkedin", "instagram", "x_thread", "substack"]),
+  title: z.string(),
+  hooks: z.array(z.string()).optional(),
+  body: z.string().optional(),
+  tweets: z.array(z.object({ index: z.number(), text: z.string() })).optional(),
+  slides: z
     .array(
       z.object({
-        format: z.enum(["linkedin", "instagram", "x_thread", "substack"]),
-        title: z.string(),
-        hooks: z.array(z.string()).optional(),
-        body: z.string().optional(),
-        tweets: z
-          .array(z.object({ index: z.number(), text: z.string() }))
-          .optional(),
-        slides: z
-          .array(
-            z.object({
-              index: z.number(),
-              text: z.string(),
-              design_note: z.string().optional(),
-            }),
-          )
-          .optional(),
-        subtitle: z.string().optional(),
-        citation_line: z.string(),
-        sample_origin: z.string().optional(),
+        index: z.number(),
+        text: z.string(),
+        design_note: z.string().optional(),
       }),
     )
-    .min(3),
+    .optional(),
+  subtitle: z.string().optional(),
+  citation_line: z.string(),
+  sample_origin: z.string().optional(),
+});
+
+const sampleSchema = z.object({
+  samples: z.array(sampleItemSchema).min(3),
 });
 
 export async function generateSamplePosts(
@@ -146,6 +143,140 @@ export async function generateSamplePosts(
     inserted.push(row);
   }
   return inserted;
+}
+
+export async function regenerateSamplePost({
+  userId,
+  existing,
+  guidance,
+  selectedHook,
+  hookVariant,
+}: {
+  userId: string;
+  existing: GeneratedContent;
+  guidance?: string;
+  selectedHook?: string;
+  hookVariant?: number;
+}): Promise<GeneratedContent> {
+  const [doc] = await db
+    .select()
+    .from(strategyDocs)
+    .where(eq(strategyDocs.userId, userId))
+    .limit(1);
+  if (!doc) throw new Error("No Strategy Doc — generate it first.");
+
+  const [session] = await db
+    .select()
+    .from(interviewSessions)
+    .where(eq(interviewSessions.userId, userId))
+    .limit(1);
+  const answers = (session?.answers ?? {}) as Record<
+    string,
+    { answer: string; followups?: string[] }
+  >;
+
+  const [user] = await db
+    .select({ name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const fewShot = await getFewShotExamples(userId);
+
+  const prompt = loadPrompt("sample-posts", {
+    userName: user?.name ?? user?.email ?? "the user",
+    positioning: doc.positioningStatement ?? "",
+    pillar1Topic: doc.pillar1Topic ?? "",
+    pillar1Description: doc.pillar1Description ?? "",
+    pillar2Topic: doc.pillar2Topic ?? "",
+    pillar2Description: doc.pillar2Description ?? "",
+    pillar3Topic: doc.pillar3Topic ?? "",
+    pillar3Description: doc.pillar3Description ?? "",
+    voiceTone: doc.voiceProfile?.tone ?? "",
+    voiceRoleModels: (doc.voiceProfile?.role_models ?? []).join(", "),
+    voiceAntiPatterns: (doc.voiceProfile?.anti_patterns ?? []).join(", "),
+    interviewAnswers: formatAnswersForSamples(answers),
+  });
+
+  const currentTitle = existing.contentMetadata?.title ?? "Untitled draft";
+  const selectedHookNote = selectedHook
+    ? `\n- The user selected Hook ${hookVariant ?? existing.hookVariant}: "${selectedHook}". Use that exact hook as the opening hook and keep it in the hooks array at that hook number.`
+    : "";
+  const guidanceNote = guidance ? `\n- User guidance: ${guidance}` : "";
+  const task = `\n\nREGENERATION TASK
+Regenerate exactly one ${existing.format} sample draft.
+Current draft title: ${currentTitle}
+Keep the same format. Use the strategy, interview answers, approved voice examples, and rejected voice examples below.
+${selectedHookNote}${guidanceNote}
+
+APPROVED VOICE EXAMPLES
+${fewShot.approved}
+
+REJECTED VOICE EXAMPLES
+${fewShot.rejected}
+
+Return only one JSON object with this shape:
+{
+  "format": "${existing.format}",
+  "title": "...",
+  "hooks": ["Hook 1", "Hook 2", "Hook 3"],
+  "body": "...",
+  "tweets": [{"index": 1, "text": "..."}],
+  "slides": [{"index": 1, "text": "...", "design_note": "..."}],
+  "subtitle": "...",
+  "citation_line": "↳ Based on your interview answer about <topic>",
+  "sample_origin": "Exact interview phrase mined"
+}`;
+
+  let sample: z.infer<typeof sampleItemSchema>;
+  try {
+    const result = await callAI({
+      taskType: "sample_posts",
+      userId,
+      messages: [{ role: "system", content: prompt.system + task }],
+      json: true,
+      promptVersion: prompt.meta.version,
+      maxOutputTokens: existing.format === "substack" ? 6000 : 3500,
+    });
+    sample = sampleItemSchema.parse(JSON.parse(result.content));
+  } catch (err) {
+    console.warn("[strategy/samples] sample regeneration failed", err);
+    sample =
+      buildFallbackSamples(doc, answers).samples.find(
+        (item) => item.format === existing.format,
+      ) ?? buildFallbackSamples(doc, answers).samples[0];
+  }
+
+  const nextHookVariant = hookVariant ?? existing.hookVariant ?? 1;
+  const hooks = [...(sample.hooks ?? [])];
+  if (selectedHook) hooks[nextHookVariant - 1] = selectedHook;
+  sample = { ...sample, hooks };
+
+  const [updated] = await db
+    .update(generatedContent)
+    .set({
+      content: renderSampleContent(sample, nextHookVariant),
+      editedContent: null,
+      hookVariant: nextHookVariant,
+      contentMetadata: {
+        ...(existing.contentMetadata ?? {}),
+        origin: "strategy_sample",
+        hooks,
+        tweets: sample.tweets,
+        slides: sample.slides,
+        title: sample.title,
+        subtitle: sample.subtitle,
+        sample_origin: sample.sample_origin,
+      },
+      sourceCitation: sample.citation_line,
+      status: "draft",
+      slopReviewNeeded: false,
+      generationPromptVersion: prompt.meta.version,
+      updatedAt: new Date(),
+    })
+    .where(eq(generatedContent.id, existing.id))
+    .returning();
+
+  return updated;
 }
 
 async function existingSampleDrafts(userId: string) {
@@ -268,6 +399,7 @@ function clip(value: string) {
 
 function renderSampleContent(
   s: z.infer<typeof sampleSchema>["samples"][number],
+  hookVariant = 1,
 ): string {
   if (s.format === "x_thread" && s.tweets) {
     return s.tweets
@@ -284,7 +416,7 @@ function renderSampleContent(
       )
       .join("\n\n");
   }
-  const hook = s.hooks?.[0] ?? "";
+  const hook = s.hooks?.[hookVariant - 1] ?? s.hooks?.[0] ?? "";
   const parts = [hook, s.body, s.citation_line].filter(Boolean);
   return parts.join("\n\n");
 }

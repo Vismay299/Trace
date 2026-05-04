@@ -79,7 +79,12 @@ export async function generateForStory(
   userId: string,
   storySeedId: string,
   formats: ContentFormat[],
-  opts?: { regenerationGuidance?: string; existingContentId?: string },
+  opts?: {
+    regenerationGuidance?: string;
+    existingContentId?: string;
+    selectedHook?: string;
+    hookVariant?: number;
+  },
 ): Promise<GeneratedContent[]> {
   const [doc] = await db
     .select()
@@ -151,7 +156,12 @@ async function generateOneFormat(
   seedId: string,
   format: ContentFormat,
   baseVars: Record<string, string | number>,
-  opts?: { regenerationGuidance?: string; existingContentId?: string },
+  opts?: {
+    regenerationGuidance?: string;
+    existingContentId?: string;
+    selectedHook?: string;
+    hookVariant?: number;
+  },
 ): Promise<GeneratedContent> {
   const promptName = formatPromptName(format);
   const prompt = loadPrompt(promptName, baseVars);
@@ -194,6 +204,8 @@ async function generateOneFormat(
     slopReviewNeeded: !result.passed,
     citation: baseVars.sourceCitation as string,
     existingContentId: opts?.existingContentId,
+    selectedHook: opts?.selectedHook,
+    hookVariant: opts?.hookVariant,
   });
   return persisted;
 }
@@ -261,16 +273,22 @@ async function persistGenerated(args: {
   slopReviewNeeded: boolean;
   citation: string;
   existingContentId?: string;
+  selectedHook?: string;
+  hookVariant?: number;
 }): Promise<GeneratedContent> {
   const r = args.raw;
   const hooks: string[] = r.hooks ?? [];
-  const fullContent = renderForFormat(args.format, r);
+  const hookVariant = args.hookVariant ?? 1;
+  if (args.selectedHook) {
+    hooks[hookVariant - 1] = args.selectedHook;
+  }
+  const fullContent = renderForFormat(args.format, r, hookVariant);
 
   const values = {
     userId: args.userId,
     storySeedId: args.storySeedId,
     format: args.format,
-    hookVariant: 1,
+    hookVariant,
     content: fullContent,
     contentMetadata: {
       hooks,
@@ -302,14 +320,17 @@ async function persistGenerated(args: {
   return created;
 }
 
-function renderForFormat(format: ContentFormat, r: GeneratedRaw): string {
+function renderForFormat(
+  format: ContentFormat,
+  r: GeneratedRaw,
+  hookVariant = 1,
+): string {
+  const hook = r.hooks?.[hookVariant - 1] ?? r.hooks?.[0] ?? "";
   if (format === "linkedin") {
-    const hook = r.hooks?.[0] ?? "";
     return [hook, r.body, r.citation_line].filter(Boolean).join("\n\n");
   }
   if (format === "x_thread") {
     const tweets = (r.tweets as { index: number; text: string }[]) ?? [];
-    const hook = r.hooks?.[0] ?? "";
     const ordered = [...tweets].sort((a, b) => a.index - b.index);
     // Replace [HOOK] placeholder if model used it.
     if (ordered[0]?.text?.includes("[HOOK]")) {

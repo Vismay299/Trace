@@ -109,13 +109,9 @@ export function ContentEditor({
 
   const pickHook = async (i: number) => {
     setHookIndex(i);
-    await persist({ hookVariant: i + 1 });
-    // Replace the hook line in editor view.
-    if (active.format === "linkedin" && hooks[i]) {
-      const lines = edited.split("\n\n");
-      lines[0] = hooks[i];
-      setEdited(lines.join("\n\n"));
-    }
+    const nextEdited = applyHookToContent(active.format, edited, hooks[i]);
+    setEdited(nextEdited);
+    await persist({ hookVariant: i + 1, editedContent: nextEdited });
   };
 
   const copy = async () => {
@@ -130,7 +126,11 @@ export function ContentEditor({
       const res = await fetch(`/api/content/${active.id}/regenerate`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ guidance: regenGuidance }),
+        body: JSON.stringify({
+          guidance: regenGuidance,
+          selectedHook: hooks[hookIndex],
+          hookVariant: hookIndex + 1,
+        }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -254,16 +254,25 @@ export function ContentEditor({
       {/* Action bar */}
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={saveEdit}>Save edits</Button>
-        {active.status !== "approved" ? (
-          <Button onClick={() => setStatus("approved")} variant="ghost">
-            Approve
-          </Button>
-        ) : (
-          <Button onClick={() => setStatus("draft")} variant="ghost">
-            Unapprove
-          </Button>
-        )}
-        <Button onClick={() => setStatus("rejected")} variant="ghost">
+        <Button
+          onClick={() => setStatus("approved")}
+          disabled={active.status === "approved"}
+          variant={active.status === "approved" ? "primary" : "ghost"}
+        >
+          Approve
+        </Button>
+        <Button
+          onClick={() => setStatus("draft")}
+          disabled={active.status !== "approved"}
+          variant="ghost"
+        >
+          Unapprove
+        </Button>
+        <Button
+          onClick={() => setStatus("rejected")}
+          disabled={active.status === "rejected"}
+          variant="ghost"
+        >
           Reject
         </Button>
         <Button onClick={copy} variant="ghost">
@@ -287,7 +296,11 @@ export function ContentEditor({
           className="w-auto min-w-36"
           aria-label="Schedule date"
         />
-        <Button onClick={schedule} disabled={!scheduleDate} variant="ghost">
+        <Button
+          onClick={schedule}
+          disabled={!scheduleDate || active.status !== "approved"}
+          variant="ghost"
+        >
           Schedule
         </Button>
         <Button onClick={remove} variant="link" className="ml-auto text-danger">
@@ -331,10 +344,32 @@ export function ContentEditor({
               ? active.voiceFeedback
               : undefined
           }
+          onSaved={(voiceFeedback) =>
+            setActive((current) => ({ ...current, voiceFeedback }))
+          }
         />
       </section>
     </div>
   );
+}
+
+function applyHookToContent(
+  format: ContentRow["format"],
+  content: string,
+  hook?: string,
+) {
+  if (!hook) return content;
+  if (format === "linkedin") {
+    const lines = content.split("\n\n");
+    lines[0] = hook;
+    return lines.join("\n\n");
+  }
+  if (format === "x_thread") {
+    const parts = content.split("\n\n");
+    parts[0] = `1/ ${hook}`;
+    return parts.join("\n\n");
+  }
+  return content;
 }
 
 function isVoiceFeedbackValue(

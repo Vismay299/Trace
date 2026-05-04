@@ -35,8 +35,14 @@ export async function listCalendarItems({
         id: contentCalendar.id,
         userId: contentCalendar.userId,
         generatedContentId: contentCalendar.generatedContentId,
+        storySeedId: contentCalendar.storySeedId,
+        narrativePlanId: contentCalendar.narrativePlanId,
+        title: contentCalendar.title,
+        description: contentCalendar.description,
         scheduledDate: contentCalendar.scheduledDate,
         platform: contentCalendar.platform,
+        sourceOrigin: contentCalendar.sourceOrigin,
+        metadata: contentCalendar.metadata,
         status: contentCalendar.status,
         createdAt: contentCalendar.createdAt,
       },
@@ -60,7 +66,7 @@ export async function listUnscheduledDrafts(userId: string) {
     .where(
       and(
         eq(generatedContent.userId, userId),
-        eq(generatedContent.status, "draft"),
+        eq(generatedContent.status, "approved"),
         isNull(generatedContent.scheduledFor),
       ),
     )
@@ -86,6 +92,9 @@ export async function scheduleGeneratedContent({
     .limit(1);
   if (!content || content.userId !== userId)
     throw new Error("Draft not found.");
+  if (content.status !== "approved") {
+    throw new Error("Approve this draft before scheduling it.");
+  }
 
   const dateOnly = scheduledDate.slice(0, 10);
   const title =
@@ -108,16 +117,24 @@ export async function scheduleGeneratedContent({
     const [item] = await db
       .update(contentCalendar)
       .set({
+        storySeedId: content.storySeedId,
+        title,
+        description: content.sourceCitation,
         scheduledDate: dateOnly,
         platform: platform ?? (content.format as CalendarPlatform),
+        sourceOrigin: "generated_content",
         status: "scheduled",
+        metadata: { contentStatus: content.status, rescheduled: true },
       })
       .where(eq(contentCalendar.id, existing.id))
       .returning({
         id: contentCalendar.id,
         generatedContentId: contentCalendar.generatedContentId,
+        title: contentCalendar.title,
+        description: contentCalendar.description,
         scheduledDate: contentCalendar.scheduledDate,
         platform: contentCalendar.platform,
+        sourceOrigin: contentCalendar.sourceOrigin,
         status: contentCalendar.status,
       });
 
@@ -130,15 +147,23 @@ export async function scheduleGeneratedContent({
     .values({
       userId,
       generatedContentId,
+      storySeedId: content.storySeedId,
+      title,
+      description: content.sourceCitation,
       scheduledDate: dateOnly,
       platform: platform ?? (content.format as CalendarPlatform),
+      sourceOrigin: "generated_content",
       status: "scheduled",
+      metadata: { contentStatus: content.status },
     })
     .returning({
       id: contentCalendar.id,
       generatedContentId: contentCalendar.generatedContentId,
+      title: contentCalendar.title,
+      description: contentCalendar.description,
       scheduledDate: contentCalendar.scheduledDate,
       platform: contentCalendar.platform,
+      sourceOrigin: contentCalendar.sourceOrigin,
       status: contentCalendar.status,
     });
 
@@ -177,7 +202,10 @@ export async function updateCalendarItem({
     });
   if (!item) throw new Error("Calendar item not found.");
   if (item.generatedContentId && scheduledDate) {
-    await markDraftScheduled(item.generatedContentId, scheduledDate.slice(0, 10));
+    await markDraftScheduled(
+      item.generatedContentId,
+      scheduledDate.slice(0, 10),
+    );
   }
   if (item.generatedContentId && status === "cancelled") {
     await markDraftUnscheduled(item.generatedContentId);
@@ -200,7 +228,10 @@ export async function deleteCalendarItem(userId: string, id: string) {
   return item;
 }
 
-async function markDraftScheduled(generatedContentId: string, dateOnly: string) {
+async function markDraftScheduled(
+  generatedContentId: string,
+  dateOnly: string,
+) {
   await db
     .update(generatedContent)
     .set({
@@ -237,29 +268,33 @@ export async function createPlannedCalendarItem({
     .insert(contentCalendar)
     .values({
       userId,
+      storySeedId,
+      narrativePlanId,
+      title: post.title,
+      description: post.summary,
       scheduledDate: scheduledDate.slice(0, 10),
       platform: post.format,
+      sourceOrigin: "narrative_plan",
       status: "scheduled",
+      metadata: {
+        storyType: post.story_type,
+        pillarMatch: post.pillar_match,
+        sourceNote: post.source_note,
+        isAnchor: post.is_anchor ?? false,
+      },
     })
     .returning({
       id: contentCalendar.id,
       generatedContentId: contentCalendar.generatedContentId,
+      storySeedId: contentCalendar.storySeedId,
+      narrativePlanId: contentCalendar.narrativePlanId,
+      title: contentCalendar.title,
+      description: contentCalendar.description,
       scheduledDate: contentCalendar.scheduledDate,
       platform: contentCalendar.platform,
+      sourceOrigin: contentCalendar.sourceOrigin,
       status: contentCalendar.status,
+      metadata: contentCalendar.metadata,
     });
-  return {
-    ...item,
-    storySeedId,
-    narrativePlanId,
-    title: post.title,
-    description: post.summary,
-    sourceOrigin: "narrative_plan",
-    metadata: {
-      storyType: post.story_type,
-      pillarMatch: post.pillar_match,
-      sourceNote: post.source_note,
-      isAnchor: post.is_anchor ?? false,
-    },
-  };
+  return item;
 }

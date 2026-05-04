@@ -46,17 +46,19 @@ export default async function CalendarPage({
         initialItems={items.map((row) => ({
           id: row.calendar.id,
           title:
+            row.calendar.title ??
             row.content?.contentMetadata?.title ??
             row.seed?.title ??
             "Scheduled item",
           description:
+            row.calendar.description ??
             row.content?.sourceCitation ??
             row.seed?.sourceCitation ??
             null,
           scheduledDate: String(row.calendar.scheduledDate).slice(0, 10),
           platform: row.calendar.platform ?? "linkedin",
           status: row.calendar.status ?? "scheduled",
-          sourceOrigin: row.content ? "generated_content" : "manual",
+          sourceOrigin: row.calendar.sourceOrigin ?? "manual",
           contentId: row.calendar.generatedContentId ?? null,
         }))}
         initialDrafts={drafts.map((draft) => ({

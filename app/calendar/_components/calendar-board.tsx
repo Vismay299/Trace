@@ -44,7 +44,7 @@ export function CalendarBoard({
   const byDate = useMemo(() => {
     const map = new Map<string, CalendarItem[]>();
     for (const item of items) {
-      const key = item.scheduledDate.slice(0, 10);
+      const key = dateKey(item.scheduledDate);
       map.set(key, [...(map.get(key) ?? []), item]);
     }
     return map;
@@ -130,7 +130,7 @@ export function CalendarBoard({
                         className="rounded-2xl border border-border-strong px-3 py-2"
                       >
                         <p className="text-xs uppercase tracking-[0.16em] text-accent">
-                          {item.platform.replaceAll("_", " ")} ·{" "}
+                          {(item.platform || "draft").replaceAll("_", " ")} ·{" "}
                           {item.sourceOrigin}
                         </p>
                         <p className="mt-1 text-sm font-medium text-text">
@@ -225,4 +225,10 @@ function nextDays(count: number) {
     date.setDate(start.getDate() + index);
     return date.toISOString().slice(0, 10);
   });
+}
+
+export function dateKey(value: unknown) {
+  if (!value) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
 }

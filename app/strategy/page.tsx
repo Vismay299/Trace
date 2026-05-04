@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { generatedContent } from "@/lib/db/schema";
+import { generatedContent, interviewSessions } from "@/lib/db/schema";
 import { getStrategy } from "@/lib/strategy/generate";
 import { GenerateStrategyTrigger } from "./_components/generate-trigger";
 import { StrategyView } from "./_components/strategy-view";
@@ -22,6 +22,15 @@ export default async function StrategyPage({
   const params = await searchParams;
   const firstRun = params.firstRun === "1";
   const proIntent = params.plan === "pro";
+  const [interview] = await db
+    .select({ isComplete: interviewSessions.isComplete })
+    .from(interviewSessions)
+    .where(eq(interviewSessions.userId, userId))
+    .limit(1);
+
+  if (!interview?.isComplete) {
+    redirect(`/onboarding${proIntent ? "?plan=pro" : ""}`);
+  }
 
   const doc = await getStrategy(userId);
   if (!doc) {
@@ -41,7 +50,7 @@ export default async function StrategyPage({
   }
   if (proIntent) redirect("/checkout");
 
-  // Sample posts are persisted as generated_content rows with no story_seed_id.
+  // Sample posts are persisted as generated_content rows before source mining.
   const samples = await db
     .select({
       id: generatedContent.id,
@@ -55,6 +64,7 @@ export default async function StrategyPage({
       and(
         eq(generatedContent.userId, userId),
         isNull(generatedContent.storySeedId),
+        sql`${generatedContent.contentMetadata}->>'origin' = 'strategy_sample'`,
       ),
     )
     .limit(5);

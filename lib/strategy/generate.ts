@@ -79,6 +79,9 @@ export async function generateStrategyDoc(
     string,
     { answer: string; followups?: string[]; mode?: string }
   >;
+  if (!session.isComplete) {
+    throw new Error("Complete the interview before generating your Strategy.");
+  }
   const prompt = loadPrompt("strategy-generation", {
     userName: user?.name ?? user?.email ?? "the user",
     interviewAnswers: formatAnswers(answers),
@@ -100,7 +103,13 @@ export async function generateStrategyDoc(
         promptVersion: prompt.meta.version,
         maxOutputTokens: 4000,
       });
-      return strategySchema.parse(JSON.parse(result.content));
+      const content = result.content.trim();
+      if (!content) {
+        throw new Error(
+          "The AI model returned an empty Strategy response. Try again in a moment.",
+        );
+      }
+      return strategySchema.parse(JSON.parse(content));
     },
   });
 

@@ -227,6 +227,6 @@ export async function refreshCurrentBudgetLimits(
     );
 }
 
-function snakeCase(camel: string): string {
-  return camel.replace(/[A-Z0-9]+/g, (m) => "_" + m.toLowerCase());
+export function snakeCase(camel: string): string {
+  return camel.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 }

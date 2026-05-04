@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { currentWeekRange, defaultLimitsFor } from "../budget";
+import { currentWeekRange, defaultLimitsFor, snakeCase } from "../budget";
 
 describe("budget helpers", () => {
   it("currentWeekRange returns Monday→Sunday", () => {
@@ -31,5 +31,11 @@ describe("budget helpers", () => {
     expect(defaultLimitsFor("studio")[1]).toBeGreaterThan(
       defaultLimitsFor("pro")[1],
     );
+  });
+
+  it("maps budget property names to existing database columns", () => {
+    expect(snakeCase("tier1RequestsUsed")).toBe("tier1_requests_used");
+    expect(snakeCase("tier2RequestsLimit")).toBe("tier2_requests_limit");
+    expect(snakeCase("billingPeriodEnd")).toBe("billing_period_end");
   });
 });

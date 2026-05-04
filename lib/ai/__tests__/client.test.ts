@@ -24,10 +24,10 @@ vi.mock("../routing", () => ({
     modelId:
       requestedModel ??
       (tier === 1
-        ? "deepseek/deepseek-chat-v3"
+        ? "openrouter/free"
         : tier === 2
-          ? "qwen/qwen-2.5-72b-instruct"
-          : "google/gemini-2.5-flash"),
+          ? "openai/gpt-oss-120b:free"
+          : "openai/gpt-oss-20b:free"),
     reason: requestedModel ? "explicit_model" : "primary",
     source: requestedModel ? "explicit_model" : "default",
   })),
@@ -37,6 +37,7 @@ import { callAI, TASK_TIERS, MODELS } from "../client";
 import { AIBudgetExhaustedError, AIUpstreamError } from "../types";
 import * as budget from "../budget";
 import * as usage from "../usage";
+import * as routing from "../routing";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -72,6 +73,10 @@ describe("callAI", () => {
       (fetchMock.mock.calls[0][1] as RequestInit).body as string,
     );
     expect(MODELS[body.model].tier).toBe(1);
+    expect(body.messages).toEqual([
+      { role: "system", content: "hi" },
+      { role: "user", content: "Generate the requested response now." },
+    ]);
   });
 
   it("routes slop_check through Tier 3 default model", async () => {
@@ -123,6 +128,137 @@ describe("callAI", () => {
     expect(budget.refundBudget).toHaveBeenCalledWith("u1", 2);
   });
 
+  it("retries OpenRouter 429s and falls back to another free same-tier model", async () => {
+    fetchMock
+      .mockReturnValueOnce(
+        Promise.resolve(
+          new Response("rate limited", {
+            status: 429,
+            headers: { "content-type": "text/plain" },
+          }),
+        ),
+      )
+      .mockReturnValueOnce(
+        Promise.resolve(
+          new Response("rate limited", {
+            status: 429,
+            headers: { "content-type": "text/plain" },
+          }),
+        ),
+      )
+      .mockReturnValueOnce(
+        Promise.resolve(
+          new Response("rate limited", {
+            status: 429,
+            headers: { "content-type": "text/plain" },
+          }),
+        ),
+      )
+      .mockReturnValueOnce(okResponse("hello from fallback"));
+
+    const result = await callAI({
+      taskType: "content_generation",
+      userId: "u1",
+      messages: [{ role: "system", content: "hi" }],
+    });
+
+    expect(result.modelUsed).toBe("openai/gpt-oss-120b:free");
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    const firstBody = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    const lastBody = JSON.parse(
+      (fetchMock.mock.calls[3][1] as RequestInit).body as string,
+    );
+    expect(firstBody.model).toBe("openrouter/free");
+    expect(lastBody.model).toBe("openai/gpt-oss-120b:free");
+  });
+
+  it("falls back when OpenRouter wraps a provider 400", async () => {
+    fetchMock
+      .mockReturnValueOnce(
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              error: {
+                message: "Provider returned error",
+                code: 400,
+                metadata: { provider_name: "Nvidia" },
+              },
+            }),
+            { status: 400, headers: { "content-type": "application/json" } },
+          ),
+        ),
+      )
+      .mockReturnValueOnce(okResponse("hello after provider fallback"));
+
+    const result = await callAI({
+      taskType: "content_generation",
+      userId: "u1",
+      messages: [{ role: "system", content: "hi" }],
+    });
+
+    expect(result.modelUsed).toBe("openai/gpt-oss-120b:free");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("falls back when OpenRouter returns an empty assistant message", async () => {
+    fetchMock
+      .mockReturnValueOnce(okResponse(""))
+      .mockReturnValueOnce(okResponse('{"strategy":"ready"}'));
+
+    const result = await callAI({
+      taskType: "content_generation",
+      userId: "u1",
+      messages: [{ role: "system", content: "hi" }],
+    });
+
+    expect(result.content).toBe('{"strategy":"ready"}');
+    expect(result.modelUsed).toBe("openai/gpt-oss-120b:free");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("falls back to OpenRouter when NVIDIA NIM returns a bad request", async () => {
+    vi.mocked(routing.resolveAiRouteDecision).mockResolvedValueOnce({
+      provider: "nvidia_nim",
+      modelId: "openrouter/free",
+      reason: "task_override",
+      source: "task_override",
+    });
+    process.env.NVIDIA_NIM_API_KEY = "nim-test-key";
+
+    fetchMock
+      .mockReturnValueOnce(
+        Promise.resolve(
+          new Response("nvidia bad request", {
+            status: 400,
+            headers: { "content-type": "text/plain" },
+          }),
+        ),
+      )
+      .mockReturnValueOnce(okResponse('{"ok":true}'));
+
+    const result = await callAI({
+      taskType: "content_generation",
+      userId: "u1",
+      messages: [{ role: "system", content: "hi" }],
+    });
+
+    expect(result.content).toBe('{"ok":true}');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect((fetchMock.mock.calls[0][0] as string)).toContain("integrate.api.nvidia.com");
+    expect((fetchMock.mock.calls[1][0] as string)).toContain("openrouter.ai");
+
+    const firstBody = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    const secondBody = JSON.parse(
+      (fetchMock.mock.calls[1][1] as RequestInit).body as string,
+    );
+    expect(firstBody.response_format).toBeUndefined();
+    expect(secondBody.response_format).toEqual({ type: "json_object" });
+  });
+
   it("propagates BUDGET_EXHAUSTED without burning a network call", async () => {
     vi.mocked(budget.checkAndDecrement).mockRejectedValueOnce(
       new AIBudgetExhaustedError(1, 5, 5, "2026-05-03"),
@@ -147,7 +283,7 @@ describe("callAI", () => {
     const logged = vi.mocked(usage.logUsage).mock.calls[0][0];
     expect(logged.inputTokens).toBe(1234);
     expect(logged.outputTokens).toBe(567);
-    expect(logged.estimatedCostUsd).toBeGreaterThan(0);
+    expect(logged.estimatedCostUsd).toBe(0);
     expect(logged.success).toBe(true);
   });
 
@@ -170,7 +306,7 @@ describe("callAI", () => {
         taskType: "content_generation",
         userId: "u1",
         messages: [{ role: "system", content: "x" }],
-        model: "google/gemini-2.5-flash", // tier 3 — not allowed for tier-1 task
+        model: "openai/gpt-oss-20b:free", // tier 3 — not allowed for tier-1 task
       }),
     ).rejects.toThrow(/Tier mismatch/);
   });

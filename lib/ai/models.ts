@@ -1,13 +1,13 @@
 /**
  * Model registry. Source of truth: spec §F15 + §14.
  *
- * Tier 1 = frontier (final content gen, voice match, strategy doc).
+ * Tier 1 = high-capability (final content gen, voice match, strategy doc).
  * Tier 2 = mid (narrative plans, story extraction, pillar mapping).
  * Tier 3 = small (classification, follow-ups, slop check, voice score).
  *
- * Costs are USD per 1M tokens, OpenRouter-listed prices captured 2026-04.
- * Treat them as approximations — the authoritative numbers come from the
- * monthly OpenRouter bill, not these constants.
+ * Defaults intentionally use OpenRouter free models so a no-credit account can
+ * still generate. Free models are rate-limited by OpenRouter, so this should be
+ * treated as bootstrap routing rather than production-grade capacity.
  */
 
 export type Tier = 1 | 2 | 3;
@@ -24,45 +24,37 @@ export type ModelConfig = {
 };
 
 export const MODELS: Record<string, ModelConfig> = {
-  "deepseek/deepseek-chat-v3": {
-    id: "deepseek/deepseek-chat-v3",
+  "openrouter/free": {
+    id: "openrouter/free",
     tier: 1,
-    contextWindow: 64_000,
-    inputCostPerMTok: 0.14,
-    outputCostPerMTok: 0.28,
+    contextWindow: 200_000,
+    inputCostPerMTok: 0,
+    outputCostPerMTok: 0,
     supportsJsonMode: true,
   },
-  "qwen/qwen-2.5-72b-instruct": {
-    id: "qwen/qwen-2.5-72b-instruct",
+  "openai/gpt-oss-120b:free": {
+    id: "openai/gpt-oss-120b:free",
     tier: 2,
-    contextWindow: 32_000,
-    inputCostPerMTok: 0.13,
-    outputCostPerMTok: 0.4,
+    contextWindow: 131_072,
+    inputCostPerMTok: 0,
+    outputCostPerMTok: 0,
     supportsJsonMode: true,
   },
-  "meta-llama/llama-4-maverick": {
-    id: "meta-llama/llama-4-maverick",
-    tier: 2,
-    contextWindow: 128_000,
-    inputCostPerMTok: 0.18,
-    outputCostPerMTok: 0.6,
-    supportsJsonMode: true,
-  },
-  "google/gemini-2.5-flash": {
-    id: "google/gemini-2.5-flash",
+  "openai/gpt-oss-20b:free": {
+    id: "openai/gpt-oss-20b:free",
     tier: 3,
-    contextWindow: 1_000_000,
-    inputCostPerMTok: 0.075,
-    outputCostPerMTok: 0.3,
+    contextWindow: 131_072,
+    inputCostPerMTok: 0,
+    outputCostPerMTok: 0,
     supportsJsonMode: true,
   },
 };
 
 /** Default model per tier. */
 export const TIER_DEFAULTS: Record<Tier, string> = {
-  1: "deepseek/deepseek-chat-v3",
-  2: "qwen/qwen-2.5-72b-instruct",
-  3: "google/gemini-2.5-flash",
+  1: "openrouter/free",
+  2: "openai/gpt-oss-120b:free",
+  3: "openai/gpt-oss-20b:free",
 };
 
 /** Task-type → tier classification. Wrong tier is a bug, not a style choice. */

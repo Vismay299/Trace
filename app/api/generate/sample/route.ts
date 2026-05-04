@@ -19,6 +19,13 @@ export async function POST() {
     return NextResponse.json({
       ok: true,
       contentIds: samples.map((sample) => sample.id),
+      samples: samples.map((sample) => ({
+        id: sample.id,
+        format: sample.format,
+        content: sample.content,
+        contentMetadata: sample.contentMetadata ?? undefined,
+        sourceCitation: sample.sourceCitation,
+      })),
     });
   } catch (err) {
     if (err instanceof AIBudgetExhaustedError) {

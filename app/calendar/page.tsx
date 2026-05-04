@@ -55,11 +55,11 @@ export default async function CalendarPage({
             row.content?.sourceCitation ??
             row.seed?.sourceCitation ??
             null,
-          scheduledDate: row.calendar.scheduledDate,
-          platform: row.calendar.platform,
-          status: row.calendar.status,
+          scheduledDate: String(row.calendar.scheduledDate).slice(0, 10),
+          platform: row.calendar.platform ?? "linkedin",
+          status: row.calendar.status ?? "scheduled",
           sourceOrigin: row.calendar.sourceOrigin ?? "manual",
-          contentId: row.calendar.generatedContentId,
+          contentId: row.calendar.generatedContentId ?? null,
         }))}
         initialDrafts={drafts.map((draft) => ({
           id: draft.id,

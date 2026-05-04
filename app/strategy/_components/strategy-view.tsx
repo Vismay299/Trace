@@ -26,7 +26,9 @@ export function StrategyView({
 }) {
   const router = useRouter();
   const [doc, setDoc] = useState<StrategyDoc>(initialDoc);
-  const [samples] = useState<SamplePost[]>(initialSamples);
+  const [samples, setSamples] = useState<SamplePost[]>(initialSamples);
+  const [sampleBusy, setSampleBusy] = useState(false);
+  const [sampleError, setSampleError] = useState<string | null>(null);
 
   const updatePatch = async (patch: Record<string, unknown>) => {
     const res = await fetch("/api/strategy", {
@@ -53,14 +55,30 @@ export function StrategyView({
       setDoc(data.strategy);
     }
   };
+  const generateSamples = async () => {
+    setSampleBusy(true);
+    setSampleError(null);
+    const res = await fetch("/api/generate/sample", { method: "POST" });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      setSampleError(data?.error ?? "Could not create sample drafts.");
+      setSampleBusy(false);
+      return;
+    }
+    if (Array.isArray(data.samples)) {
+      setSamples(data.samples);
+    }
+    setSampleBusy(false);
+    router.refresh();
+  };
 
   return (
     <div className="space-y-8">
       {showFirstRunBanner && (
         <div className="rounded-card border border-accent/30 bg-accent-soft px-6 py-4 text-sm text-text">
           Here's your Personal Brand Strategy. Read it. Edit anything that
-          doesn't sound like you. Then scroll down to see the first 5 sample
-          posts we wrote in your voice — no source data required.
+          doesn't sound like you. Then open Drafts to review your first sample
+          posts. They are based on your interview, not source mining.
         </div>
       )}
 
@@ -77,6 +95,9 @@ export function StrategyView({
             Download as PDF
           </Button>
           <RedoStrategyButton />
+          <Button href="/content" variant="ghost">
+            Go to drafts
+          </Button>
           <Button href="/sources">Connect a source →</Button>
         </div>
       </header>
@@ -237,18 +258,20 @@ export function StrategyView({
         </ul>
       </StrategySection>
 
-      {samples.length > 0 && (
-        <section className="space-y-4">
-          <header>
+      <section className="space-y-4">
+        <header className="flex flex-wrap items-end justify-between gap-3">
+          <div>
             <h2 className="text-2xl font-medium tracking-tight text-text">
-              What your content could look like
+              Sample drafts
             </h2>
             <p className="text-text-muted">
-              5 sample posts derived from your interview answers — no source
-              data yet. When you connect GitHub or upload files, every post will
-              cite a real artifact.
+              First drafts live in Drafts. Content Mine stays for source-backed
+              story seeds after you upload files or connect GitHub.
             </p>
-          </header>
+          </div>
+          <Button href="/content">Go to drafts</Button>
+        </header>
+        {samples.length > 0 ? (
           <div className="grid gap-4 lg:grid-cols-2">
             {samples.map((s) => (
               <article
@@ -278,8 +301,25 @@ export function StrategyView({
               </article>
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <div className="rounded-card border border-border-strong bg-bg-elev p-6">
+            <p className="text-text-muted">
+              No sample drafts were created yet. Create five starter drafts from
+              your interview, then review them in Drafts.
+            </p>
+            {sampleError ? (
+              <p className="mt-3 text-sm text-danger">{sampleError}</p>
+            ) : null}
+            <Button
+              onClick={generateSamples}
+              disabled={sampleBusy}
+              className="mt-5"
+            >
+              {sampleBusy ? "Creating drafts..." : "Create sample drafts"}
+            </Button>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

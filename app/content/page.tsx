@@ -24,7 +24,8 @@ export default async function ContentListPage() {
           Your drafts
         </h1>
         <p className="mt-2 text-text-muted">
-          Every piece of content Trace has generated for you, with its source.
+          Sample drafts from your interview and source-backed drafts from the
+          Content Mine both appear here.
         </p>
       </header>
       {rows.some((row) => row.contentMetadata?.origin === "ship_to_post") ? (
@@ -53,10 +54,10 @@ export default async function ContentListPage() {
       {rows.length === 0 ? (
         <p className="rounded-card border border-border-strong bg-bg-elev p-6 text-center text-text-muted">
           Nothing yet. Head to the{" "}
-          <Link href="/mine" className="text-accent hover:underline">
-            Content Mine
+          <Link href="/strategy" className="text-accent hover:underline">
+            Strategy page
           </Link>{" "}
-          to generate your first post.
+          to create your first sample drafts.
         </p>
       ) : (
         <ul className="space-y-2">

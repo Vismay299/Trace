@@ -30,8 +30,16 @@ describe("model registry", () => {
   });
 
   it("estimates cost in USD with 6 decimals", () => {
-    const m = MODELS["deepseek/deepseek-chat-v3"];
+    const m = MODELS["openai/gpt-oss-120b:free"];
     const cost = estimateCostUsd(m, 1_000_000, 1_000_000);
     expect(cost).toBeCloseTo(m.inputCostPerMTok + m.outputCostPerMTok, 5);
+  });
+
+  it("uses zero-cost OpenRouter models by default", () => {
+    for (const id of Object.values(TIER_DEFAULTS)) {
+      expect(id === "openrouter/free" || id.endsWith(":free")).toBe(true);
+      expect(MODELS[id].inputCostPerMTok).toBe(0);
+      expect(MODELS[id].outputCostPerMTok).toBe(0);
+    }
   });
 });

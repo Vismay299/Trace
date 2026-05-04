@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { getUserId } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -75,8 +76,9 @@ export default async function MinePage({
             Content Mine
           </h1>
           <p className="mt-2 text-text-muted">
-            Story seeds extracted from your real work. Each one cites its
-            source.
+            Source-backed story seeds from uploads and connected accounts. Your
+            interview creates Strategy and sample Drafts; this page starts once
+            you add real source material.
           </p>
         </div>
         <ExtractTrigger pendingChunks={pending ?? 0} />
@@ -87,13 +89,22 @@ export default async function MinePage({
       </div>
 
       {seeds.length === 0 ? (
-        <p className="rounded-card border border-border-strong bg-bg-elev p-6 text-center text-text-muted">
-          No story seeds yet.{" "}
-          <a href="/sources" className="text-accent hover:underline">
-            Upload some files
-          </a>{" "}
-          and click "Mine new chunks" above.
-        </p>
+        <div className="rounded-card border border-border-strong bg-bg-elev p-6 text-center text-text-muted">
+          <p>No source-backed story seeds yet.</p>
+          <p className="mt-2">
+            Upload files or connect GitHub, then mine new chunks. Interview-only
+            sample posts live in{" "}
+            <Link href="/content" className="text-accent hover:underline">
+              Drafts
+            </Link>
+            .
+          </p>
+          <div className="mt-5">
+            <Button href="/sources" variant="ghost">
+              Add sources
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {seeds.map((s) => (

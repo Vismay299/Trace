@@ -145,6 +145,84 @@ export async function generateSamplePosts(
   return inserted;
 }
 
+export async function generateSamplePostForFormat({
+  userId,
+  format,
+}: {
+  userId: string;
+  format: z.infer<typeof sampleItemSchema>["format"];
+}): Promise<GeneratedContent> {
+  const { doc, answers, prompt } = await loadSampleContext(userId);
+  const fewShot = await getFewShotExamples(userId);
+
+  const task = `\n\nCREATE NEW DRAFT TASK
+Create exactly one new ${format} draft.
+Use the strategy, interview answers, approved voice examples, and rejected voice examples below.
+Choose a fresh angle. Do not copy an existing title from prior sample drafts.
+
+APPROVED VOICE EXAMPLES
+${fewShot.approved}
+
+REJECTED VOICE EXAMPLES
+${fewShot.rejected}
+
+Return only one JSON object with this shape:
+{
+  "format": "${format}",
+  "title": "...",
+  "hooks": ["Hook 1", "Hook 2", "Hook 3"],
+  "body": "...",
+  "tweets": [{"index": 1, "text": "..."}],
+  "slides": [{"index": 1, "text": "...", "design_note": "..."}],
+  "subtitle": "...",
+  "citation_line": "↳ Based on your interview answer about <topic>",
+  "sample_origin": "Exact interview phrase mined"
+}`;
+
+  let sample: z.infer<typeof sampleItemSchema>;
+  try {
+    const result = await callAI({
+      taskType: "sample_posts",
+      userId,
+      messages: [{ role: "system", content: prompt.system + task }],
+      json: true,
+      promptVersion: prompt.meta.version,
+      maxOutputTokens: format === "substack" ? 6000 : 3500,
+    });
+    sample = sampleItemSchema.parse(JSON.parse(result.content));
+  } catch (err) {
+    console.warn("[strategy/samples] single sample generation failed", err);
+    sample =
+      buildFallbackSamples(doc, answers).samples.find(
+        (item) => item.format === format,
+      ) ?? buildFallbackSamples(doc, answers).samples[0];
+  }
+
+  const [row] = await db
+    .insert(generatedContent)
+    .values({
+      userId,
+      format,
+      hookVariant: 1,
+      content: renderSampleContent(sample),
+      contentMetadata: {
+        origin: "manual_create",
+        hooks: sample.hooks,
+        tweets: sample.tweets,
+        slides: sample.slides,
+        title: sample.title,
+        subtitle: sample.subtitle,
+        sample_origin: sample.sample_origin,
+      },
+      sourceCitation: sample.citation_line,
+      status: "draft",
+      generationPromptVersion: prompt.meta.version,
+    })
+    .returning();
+
+  return row;
+}
+
 export async function regenerateSamplePost({
   userId,
   existing,
@@ -158,44 +236,8 @@ export async function regenerateSamplePost({
   selectedHook?: string;
   hookVariant?: number;
 }): Promise<GeneratedContent> {
-  const [doc] = await db
-    .select()
-    .from(strategyDocs)
-    .where(eq(strategyDocs.userId, userId))
-    .limit(1);
-  if (!doc) throw new Error("No Strategy Doc — generate it first.");
-
-  const [session] = await db
-    .select()
-    .from(interviewSessions)
-    .where(eq(interviewSessions.userId, userId))
-    .limit(1);
-  const answers = (session?.answers ?? {}) as Record<
-    string,
-    { answer: string; followups?: string[] }
-  >;
-
-  const [user] = await db
-    .select({ name: users.name, email: users.email })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
+  const { doc, answers, prompt } = await loadSampleContext(userId);
   const fewShot = await getFewShotExamples(userId);
-
-  const prompt = loadPrompt("sample-posts", {
-    userName: user?.name ?? user?.email ?? "the user",
-    positioning: doc.positioningStatement ?? "",
-    pillar1Topic: doc.pillar1Topic ?? "",
-    pillar1Description: doc.pillar1Description ?? "",
-    pillar2Topic: doc.pillar2Topic ?? "",
-    pillar2Description: doc.pillar2Description ?? "",
-    pillar3Topic: doc.pillar3Topic ?? "",
-    pillar3Description: doc.pillar3Description ?? "",
-    voiceTone: doc.voiceProfile?.tone ?? "",
-    voiceRoleModels: (doc.voiceProfile?.role_models ?? []).join(", "),
-    voiceAntiPatterns: (doc.voiceProfile?.anti_patterns ?? []).join(", "),
-    interviewAnswers: formatAnswersForSamples(answers),
-  });
 
   const currentTitle = existing.contentMetadata?.title ?? "Untitled draft";
   const selectedHookNote = selectedHook
@@ -292,6 +334,49 @@ async function existingSampleDrafts(userId: string) {
     )
     .orderBy(desc(generatedContent.createdAt))
     .limit(5);
+}
+
+async function loadSampleContext(userId: string) {
+  const [doc] = await db
+    .select()
+    .from(strategyDocs)
+    .where(eq(strategyDocs.userId, userId))
+    .limit(1);
+  if (!doc) throw new Error("No Strategy Doc — generate it first.");
+
+  const [session] = await db
+    .select()
+    .from(interviewSessions)
+    .where(eq(interviewSessions.userId, userId))
+    .limit(1);
+  const answers = (session?.answers ?? {}) as Record<
+    string,
+    { answer: string; followups?: string[] }
+  >;
+
+  const [user] = await db
+    .select({ name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const userName = user?.name ?? user?.email ?? "the user";
+
+  const prompt = loadPrompt("sample-posts", {
+    userName,
+    positioning: doc.positioningStatement ?? "",
+    pillar1Topic: doc.pillar1Topic ?? "",
+    pillar1Description: doc.pillar1Description ?? "",
+    pillar2Topic: doc.pillar2Topic ?? "",
+    pillar2Description: doc.pillar2Description ?? "",
+    pillar3Topic: doc.pillar3Topic ?? "",
+    pillar3Description: doc.pillar3Description ?? "",
+    voiceTone: doc.voiceProfile?.tone ?? "",
+    voiceRoleModels: (doc.voiceProfile?.role_models ?? []).join(", "),
+    voiceAntiPatterns: (doc.voiceProfile?.anti_patterns ?? []).join(", "),
+    interviewAnswers: formatAnswersForSamples(answers),
+  });
+
+  return { doc, answers, prompt };
 }
 
 export function buildFallbackSamples(

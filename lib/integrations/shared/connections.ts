@@ -210,6 +210,7 @@ export async function enqueueSourceSync(userId: string, id: string) {
     payload: {
       sourceType: connection.sourceType,
       selectedResources: connection.selectedResources ?? [],
+      enqueueShipToPost: false,
     },
   });
 

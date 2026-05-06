@@ -17,6 +17,17 @@ describe("Phase 2 config", () => {
     }
   });
 
+  it("requires GitHub App env only when GitHub sync flag is enabled", () => {
+    const result = validatePhase2Env({ TRACE_FEATURE_GITHUB_SYNC: "true" });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.missing).toContain("GITHUB_SOURCE_APP_ID");
+      expect(result.missing).toContain("GITHUB_SOURCE_APP_SLUG");
+      expect(result.missing).toContain("GITHUB_SOURCE_PRIVATE_KEY");
+      expect(result.missing).toContain("GITHUB_SOURCE_WEBHOOK_SECRET");
+    }
+  });
+
   it("keeps OpenRouter primary and exposes NIM only as opt-in alternate", () => {
     expect(getAiRouteConfig({}).primaryProvider).toBe("openrouter");
     expect(

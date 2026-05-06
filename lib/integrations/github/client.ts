@@ -26,6 +26,10 @@ export type GitHubRepo = {
   owner: { login: string };
 };
 
+export type GitHubInstallationReposResponse = {
+  repositories: GitHubRepo[];
+};
+
 export type GitHubCommit = {
   sha: string;
   html_url: string;
@@ -109,21 +113,14 @@ export async function getGitHubUser(token: string) {
 }
 
 export async function listGitHubRepos(token: string): Promise<RepoOption[]> {
-  const [repos, starred, pinned] = await Promise.all([
-    githubGet<GitHubRepo[]>(
-      token,
-      "/user/repos?per_page=100&sort=pushed&affiliation=owner,collaborator,organization_member",
-    ),
-    githubGet<GitHubRepo[]>(token, "/user/starred?per_page=100").catch(
-      () => [],
-    ),
-    listPinnedRepos(token).catch(() => new Set<string>()),
-  ]);
+  const data = await githubGet<GitHubInstallationReposResponse>(
+    token,
+    "/installation/repositories?per_page=100",
+  );
 
-  const starredIds = new Set(starred.map((repo) => repo.id));
-  const options = repos
+  const options = data.repositories
     .filter((repo) => !repo.archived)
-    .map((repo) => toRepoOption(repo, starredIds.has(repo.id), pinned))
+    .map((repo) => toRepoOption(repo, false, new Set<string>()))
     .sort(compareRepoOptions);
 
   return options;
@@ -157,6 +154,21 @@ export async function getRepoCommitDetail({
   return githubGet<GitHubCommit>(
     token,
     `/repos/${repoFullName}/commits/${sha}`,
+  );
+}
+
+export async function getRepoPullRequestDetail({
+  token,
+  repoFullName,
+  number,
+}: {
+  token: string;
+  repoFullName: string;
+  number: number;
+}) {
+  return githubGet<GitHubPullRequest>(
+    token,
+    `/repos/${repoFullName}/pulls/${number}`,
   );
 }
 
@@ -265,36 +277,6 @@ function toRepoOption(
     contentSignals,
     defaultBranch: repo.default_branch,
   };
-}
-
-async function listPinnedRepos(token: string) {
-  const query = `
-    query {
-      viewer {
-        pinnedItems(first: 100, types: REPOSITORY) {
-          nodes {
-            ... on Repository { nameWithOwner }
-          }
-        }
-      }
-    }
-  `;
-  const res = await fetch("https://api.github.com/graphql", {
-    method: "POST",
-    headers: githubHeaders(token),
-    body: JSON.stringify({ query }),
-  });
-  if (!res.ok) return new Set<string>();
-  const data = (await res.json()) as {
-    data?: {
-      viewer?: { pinnedItems?: { nodes?: { nameWithOwner?: string }[] } };
-    };
-  };
-  return new Set(
-    data.data?.viewer?.pinnedItems?.nodes
-      ?.map((node) => node.nameWithOwner)
-      .filter(Boolean) as string[],
-  );
 }
 
 function githubHeaders(token: string): Record<string, string> {

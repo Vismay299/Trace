@@ -5,7 +5,12 @@ type EnvInput = Record<string, string | undefined>;
 
 const requiredByFlag: Partial<Record<FeatureFlag, string[]>> = {
   billing: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_PRO_PRICE_ID"],
-  github_sync: ["GITHUB_SOURCE_CLIENT_ID", "GITHUB_SOURCE_CLIENT_SECRET"],
+  github_sync: [
+    "GITHUB_SOURCE_APP_ID",
+    "GITHUB_SOURCE_APP_SLUG",
+    "GITHUB_SOURCE_PRIVATE_KEY",
+    "GITHUB_SOURCE_WEBHOOK_SECRET",
+  ],
   ship_to_post: ["REDIS_URL"],
   admin_ai_ops: ["POSTHOG_KEY"],
   nim_routing: ["NVIDIA_NIM_API_KEY"],
@@ -15,10 +20,10 @@ const phase2EnvSchema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PRO_PRICE_ID: z.string().optional(),
-  GITHUB_SOURCE_CLIENT_ID: z.string().optional(),
-  GITHUB_SOURCE_CLIENT_SECRET: z.string().optional(),
   GITHUB_SOURCE_APP_ID: z.string().optional(),
+  GITHUB_SOURCE_APP_SLUG: z.string().optional(),
   GITHUB_SOURCE_PRIVATE_KEY: z.string().optional(),
+  GITHUB_SOURCE_WEBHOOK_SECRET: z.string().optional(),
   REDIS_URL: z.string().optional(),
   SENTRY_DSN: z.string().optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),

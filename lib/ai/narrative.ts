@@ -7,12 +7,14 @@ import { db } from "@/lib/db";
 import {
   generatedContent,
   narrativePlans,
+  sourceChunks,
   storySeeds,
   strategyDocs,
   users,
   weeklyCheckins,
   type NarrativePlan,
   type RecommendedPost,
+  type SourceChunk,
 } from "@/lib/db/schema";
 import { currentWeekStart } from "@/lib/checkin/session";
 
@@ -35,6 +37,7 @@ const recommendedPostSchema = z.object({
   summary: z.string().min(3),
   pillar_match: z.string().min(1),
   source_note: z.string().min(3),
+  source_chunk_id: z.string().optional(),
   is_anchor: z.boolean().optional(),
 });
 
@@ -82,6 +85,7 @@ export async function generateNarrativePlan(
 
   const signal = await getSignalStatus(userId);
   const previousContent = await recentContentSummary(userId);
+  const githubEvidence = await recentGitHubEvidence(userId);
   const prompt = loadPrompt("weekly-narrative-planner", {
     userName: user?.name ?? user?.email ?? "the user",
     positioning: doc.positioningStatement ?? "",
@@ -94,6 +98,7 @@ export async function generateNarrativePlan(
     audience: JSON.stringify(doc.targetAudience ?? {}),
     outcomeGoal: JSON.stringify(doc.outcomeGoal ?? {}),
     sourceActivitySummary: JSON.stringify(signal),
+    recentGitHubEvidence: formatGitHubEvidence(githubEvidence),
     checkinAnswers: formatAnswers(checkin.answers),
     productStage: checkin.productStage ?? signal.product_stage,
     previousContent,
@@ -108,6 +113,10 @@ export async function generateNarrativePlan(
     maxOutputTokens: 3500,
   });
   const parsed = parseNarrativePlan(result.content);
+  const sanitized = sanitizeNarrativePlanSourceIds(
+    parsed,
+    new Set(githubEvidence.map((chunk) => chunk.id)),
+  );
 
   const [created] = await db
     .insert(narrativePlans)
@@ -119,8 +128,8 @@ export async function generateNarrativePlan(
       productStage: (checkin.productStage ??
         signal.product_stage) as ProductStage,
       contentStrategy: parsed.content_strategy,
-      recommendedPosts: parsed.recommended_posts as RecommendedPost[],
-      anchorStory: parsed.anchor_story,
+      recommendedPosts: sanitized.recommended_posts as RecommendedPost[],
+      anchorStory: sanitized.anchor_story,
       proofAssets: parsed.proof_assets,
       pillarBalance: parsed.pillar_balance,
       status: "draft",
@@ -132,6 +141,19 @@ export async function generateNarrativePlan(
 
 export function parseNarrativePlan(raw: string): NarrativePlanOutput {
   return narrativePlanOutputSchema.parse(JSON.parse(raw));
+}
+
+export function sanitizeNarrativePlanSourceIds(
+  plan: NarrativePlanOutput,
+  validIds: Set<string>,
+): NarrativePlanOutput {
+  return {
+    ...plan,
+    anchor_story: withValidSourceChunkId(plan.anchor_story, validIds),
+    recommended_posts: plan.recommended_posts.map((post) =>
+      withValidSourceChunkId(post, validIds),
+    ),
+  };
 }
 
 export async function createStoriesFromPlan(
@@ -155,21 +177,130 @@ export async function createStoriesFromPlan(
   if (!selected.length) return [];
 
   const citation = `Based on your weekly founder check-in, Week of ${plan.weekStartDate}`;
-  const rows = selected.map((post) => ({
-    userId,
-    weeklyCheckinId: plan.weeklyCheckinId,
-    narrativePlanId: plan.id,
-    sourceMode: "narrative_plan",
-    storyType: post.story_type,
-    title: post.title,
-    summary: `${post.summary}\n\nSource note: ${post.source_note}`,
-    pillarMatch: post.pillar_match,
-    relevanceScore: post.is_anchor ? 0.95 : 0.82,
-    sourceCitation: citation,
-    status: "new",
-  }));
+  const sourceChunkMap = await loadValidSourceChunksForPosts(userId, selected);
+  const rows = selected.map((post) => {
+    const sourceChunk = post.source_chunk_id
+      ? sourceChunkMap.get(post.source_chunk_id)
+      : null;
+    return {
+      userId,
+      sourceChunkId: sourceChunk?.id ?? null,
+      weeklyCheckinId: plan.weeklyCheckinId,
+      narrativePlanId: plan.id,
+      sourceMode: "narrative_plan",
+      storyType: post.story_type,
+      title: post.title,
+      summary: `${post.summary}\n\nSource note: ${post.source_note}`,
+      pillarMatch: post.pillar_match,
+      relevanceScore: post.is_anchor ? 0.95 : 0.82,
+      sourceCitation: sourceChunk?.sourceReference ?? citation,
+      status: "new",
+    };
+  });
 
   return db.insert(storySeeds).values(rows).returning();
+}
+
+type GitHubEvidenceChunk = {
+  id: string;
+  title: string | null;
+  sourceReference: string | null;
+  content: string;
+  createdAt: Date;
+  metadata: unknown;
+};
+
+async function recentGitHubEvidence(userId: string): Promise<GitHubEvidenceChunk[]> {
+  const rows = await db
+    .select({
+      id: sourceChunks.id,
+      title: sourceChunks.title,
+      sourceReference: sourceChunks.sourceReference,
+      content: sourceChunks.content,
+      createdAt: sourceChunks.createdAt,
+      metadata: sourceChunks.metadata,
+    })
+    .from(sourceChunks)
+    .where(
+      and(
+        eq(sourceChunks.userId, userId),
+        eq(sourceChunks.sourceType, "github"),
+        eq(sourceChunks.isActive, true),
+      ),
+    )
+    .orderBy(desc(sourceChunks.createdAt))
+    .limit(24);
+
+  return rows
+    .sort((a, b) => {
+      const scoreA = signalScore(a.metadata);
+      const scoreB = signalScore(b.metadata);
+      if (scoreA !== scoreB) return scoreB - scoreA;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    })
+    .slice(0, 8);
+}
+
+function formatGitHubEvidence(chunks: GitHubEvidenceChunk[]) {
+  if (!chunks.length) return "(none)";
+  return chunks
+    .map((chunk) => {
+      const metadata = metadataObject(chunk.metadata);
+      const artifactType = String(metadata.artifactType ?? "github_activity");
+      const repo = String(metadata.repoFullName ?? "GitHub");
+      const url = metadata.url ? `\nURL: ${String(metadata.url)}` : "";
+      return [
+        `[source_chunk_id: ${chunk.id}]`,
+        `Repository: ${repo}`,
+        `Artifact: ${artifactType.replaceAll("_", " ")}`,
+        `Reference: ${chunk.sourceReference ?? chunk.title ?? "GitHub activity"}${url}`,
+        chunk.content.slice(0, 1400),
+      ].join("\n");
+    })
+    .join("\n\n---\n\n");
+}
+
+function withValidSourceChunkId<T extends { source_chunk_id?: string }>(
+  post: T,
+  validIds: Set<string>,
+): T {
+  if (!post.source_chunk_id || validIds.has(post.source_chunk_id)) return post;
+  const rest = { ...post };
+  delete rest.source_chunk_id;
+  return rest as T;
+}
+
+async function loadValidSourceChunksForPosts(
+  userId: string,
+  posts: RecommendedPost[],
+) {
+  const ids = [
+    ...new Set(posts.map((post) => post.source_chunk_id).filter(Boolean)),
+  ] as string[];
+  if (!ids.length) return new Map<string, SourceChunk>();
+  const rows = await db
+    .select()
+    .from(sourceChunks)
+    .where(
+      and(
+        eq(sourceChunks.userId, userId),
+        eq(sourceChunks.sourceType, "github"),
+        eq(sourceChunks.isActive, true),
+      ),
+    );
+  return new Map(
+    rows.filter((row) => ids.includes(row.id)).map((row) => [row.id, row]),
+  );
+}
+
+function signalScore(metadata: unknown) {
+  return Number(metadataObject(metadata).signalScore ?? 0);
+}
+
+function metadataObject(metadata: unknown): Record<string, unknown> {
+  return metadata && typeof metadata === "object"
+    ? (metadata as Record<string, unknown>)
+    : {};
 }
 
 export function normalizePlanPosts(plan: NarrativePlan): RecommendedPost[] {

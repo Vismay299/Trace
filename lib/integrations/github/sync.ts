@@ -2,15 +2,14 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { sourceChunks, sourceConnections } from "@/lib/db/schema";
 import { chunkText } from "@/lib/integrations/chunker";
-import { decryptToken } from "@/lib/integrations/github/crypto";
+import { getInstallationAccessToken } from "@/lib/integrations/github/auth";
 import { enqueueJob } from "@/lib/jobs/queues";
 import type { JobEnvelope } from "@/lib/jobs/types";
 import type { SelectedResource } from "@/lib/integrations/shared/types";
 import {
   getRepoCommitDetail,
-  getRepoReadme,
+  getRepoPullRequestDetail,
   listRepoCommits,
-  listRepoIssues,
   listRepoPullRequests,
 } from "./client";
 import {
@@ -20,9 +19,7 @@ import {
 } from "./filter";
 import {
   normalizeCommit,
-  normalizeIssue,
   normalizePullRequest,
-  normalizeReadme,
   toSourceArtifact,
   type NormalizedSourceArtifact,
 } from "./normalize";
@@ -36,10 +33,18 @@ export type GitHubSyncStats = {
   shipToPostEnqueued: number;
 };
 
+export type GitHubSyncTarget = {
+  repo: { id: string; fullName: string };
+  commitShas?: string[];
+  pullRequestNumbers?: number[];
+  reason?: "manual" | "push" | "pull_request";
+};
+
 export type GitHubSourceSyncPayload = {
   sourceType: string;
-  selectedResources: SelectedResource[];
+  selectedResources?: SelectedResource[];
   enqueueShipToPost?: boolean;
+  target?: GitHubSyncTarget;
 };
 
 export async function syncGitHubConnection(
@@ -64,16 +69,17 @@ export async function syncGitHubConnection(
   if (connection.sourceType !== "github") {
     throw new Error(`Unsupported source sync type: ${connection.sourceType}`);
   }
-  if (!connection.accessTokenEncrypted) {
-    throw new Error("GitHub connection is missing an access token.");
+  if (!connection.providerInstallationId) {
+    throw new Error("Reconnect GitHub to enable app-based source sync.");
   }
 
-  const selectedResources =
-    envelope.payload.selectedResources.length > 0
-      ? envelope.payload.selectedResources
-      : ((connection.selectedResources ?? []) as SelectedResource[]);
+  const selectedResources = selectedResourcesForSync({
+    payload: envelope.payload,
+    connectionSelected:
+      (connection.selectedResources ?? []) as SelectedResource[],
+  });
 
-  const token = decryptToken(connection.accessTokenEncrypted);
+  const token = await getInstallationAccessToken(connection.providerInstallationId);
   const previousCursor = (connection.syncCursor ?? {}) as Record<
     string,
     unknown
@@ -99,6 +105,7 @@ export async function syncGitHubConnection(
         token,
         repo: { id: resource.id, fullName },
         since,
+        target: envelope.payload.target,
       });
 
       for (const artifact of artifacts) {
@@ -120,6 +127,7 @@ export async function syncGitHubConnection(
 
         if (
           envelope.payload.enqueueShipToPost !== false &&
+          envelope.payload.enqueueShipToPost === true &&
           insertedChunks > 0 &&
           qualifiesForShipToPost(artifact, signal)
         ) {
@@ -168,20 +176,54 @@ async function loadRepoArtifacts({
   token,
   repo,
   since,
+  target,
 }: {
   token: string;
   repo: { id: string; fullName: string };
   since?: string;
+  target?: GitHubSyncTarget;
 }): Promise<GitHubArtifact[]> {
-  const [commits, pulls, issues, readme] = await Promise.all([
+  if (target) {
+    const [commits, pulls] = await Promise.all([
+      Promise.all(
+        (target.commitShas ?? []).slice(0, 20).map((sha) =>
+          getRepoCommitDetail({
+            token,
+            repoFullName: repo.fullName,
+            sha,
+          }).catch(() => null),
+        ),
+      ),
+      Promise.all(
+        (target.pullRequestNumbers ?? []).slice(0, 10).map((number) =>
+          getRepoPullRequestDetail({
+            token,
+            repoFullName: repo.fullName,
+            number,
+          }).catch(() => null),
+        ),
+      ),
+    ]);
+
+    return [
+      ...commits
+        .filter((commit): commit is NonNullable<typeof commit> =>
+          Boolean(commit),
+        )
+        .map((commit) => normalizeCommit(repo, commit)),
+      ...pulls
+        .filter((pull): pull is NonNullable<typeof pull> => Boolean(pull))
+        .map((pull) => normalizePullRequest(repo, pull)),
+    ];
+  }
+
+  const [commits, pulls] = await Promise.all([
     listRepoCommits({ token, repoFullName: repo.fullName, since }).catch(
       () => [],
     ),
     listRepoPullRequests({ token, repoFullName: repo.fullName }).catch(
       () => [],
     ),
-    listRepoIssues({ token, repoFullName: repo.fullName }).catch(() => []),
-    getRepoReadme({ token, repoFullName: repo.fullName }).catch(() => null),
   ]);
 
   const detailedCommits = await Promise.all(
@@ -197,11 +239,29 @@ async function loadRepoArtifacts({
   return [
     ...detailedCommits.map((commit) => normalizeCommit(repo, commit)),
     ...pulls.map((pull) => normalizePullRequest(repo, pull)),
-    ...issues
-      .map((issue) => normalizeIssue(repo, issue))
-      .filter((issue): issue is GitHubArtifact => Boolean(issue)),
-    ...(readme ? [normalizeReadme(repo, readme)] : []),
   ];
+}
+
+export function selectedResourcesForSync({
+  payload,
+  connectionSelected,
+}: {
+  payload: GitHubSourceSyncPayload;
+  connectionSelected: SelectedResource[];
+}) {
+  const selected =
+    payload.selectedResources && payload.selectedResources.length > 0
+      ? payload.selectedResources
+      : connectionSelected;
+  if (!payload.target) return selected;
+
+  return selected.filter((resource) => {
+    const fullName = resource.fullName ?? resource.name;
+    return (
+      resource.id === payload.target?.repo.id ||
+      fullName === payload.target?.repo.fullName
+    );
+  });
 }
 
 async function upsertSourceArtifact({

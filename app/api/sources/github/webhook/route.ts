@@ -23,7 +23,12 @@ export async function POST(req: Request) {
 
   const event = req.headers.get("x-github-event") ?? "";
   const delivery = req.headers.get("x-github-delivery") ?? randomUUID();
-  const payload = JSON.parse(body) as GitHubWebhookPayload;
+  let payload: GitHubWebhookPayload;
+  try {
+    payload = JSON.parse(body) as GitHubWebhookPayload;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
   const installationId = payload.installation?.id;
 
   if (!installationId) {

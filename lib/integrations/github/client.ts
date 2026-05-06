@@ -96,6 +96,11 @@ export type RepoOption = {
 };
 
 export async function githubGet<T>(token: string, path: string): Promise<T> {
+  const res = await githubFetch(token, path);
+  return (await res.json()) as T;
+}
+
+async function githubFetch(token: string, path: string): Promise<Response> {
   const res = await fetch(`https://api.github.com${path}`, {
     headers: githubHeaders(token),
   });
@@ -105,7 +110,7 @@ export async function githubGet<T>(token: string, path: string): Promise<T> {
   if (!res.ok) {
     throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
   }
-  return (await res.json()) as T;
+  return res;
 }
 
 export async function getGitHubUser(token: string) {
@@ -113,12 +118,18 @@ export async function getGitHubUser(token: string) {
 }
 
 export async function listGitHubRepos(token: string): Promise<RepoOption[]> {
-  const data = await githubGet<GitHubInstallationReposResponse>(
-    token,
-    "/installation/repositories?per_page=100",
-  );
+  const repositories: GitHubRepo[] = [];
+  for (let page = 1; page <= 10; page += 1) {
+    const res = await githubFetch(
+      token,
+      `/installation/repositories?per_page=100&page=${page}`,
+    );
+    const data = (await res.json()) as GitHubInstallationReposResponse;
+    repositories.push(...data.repositories);
+    if (data.repositories.length < 100) break;
+  }
 
-  const options = data.repositories
+  const options = repositories
     .filter((repo) => !repo.archived)
     .map((repo) => toRepoOption(repo, false, new Set<string>()))
     .sort(compareRepoOptions);

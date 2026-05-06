@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type { SelectedResource } from "@/lib/integrations/shared/types";
 import type { GitHubSyncTarget } from "./sync";
 
@@ -143,13 +143,21 @@ function buildWebhookJobId({
   connectionId: string;
   target: GitHubSyncTarget;
 }) {
-  const shas = target.commitShas?.join(",") ?? "";
-  const prs = target.pullRequestNumbers?.join(",") ?? "";
+  const targetKey = createHash("sha256")
+    .update(
+      JSON.stringify({
+        repoId: target.repo.id,
+        commitShas: target.commitShas ?? [],
+        pullRequestNumbers: target.pullRequestNumbers ?? [],
+      }),
+    )
+    .digest("hex")
+    .slice(0, 24);
   return [
     "github-webhook",
     delivery,
     connectionId,
     target.repo.id,
-    shas || prs,
+    targetKey,
   ].join(":");
 }

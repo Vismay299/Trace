@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { callAI } from "@/lib/ai/client";
 import { getSignalStatus, type ProductStage } from "@/lib/ai/signal";
@@ -283,14 +283,13 @@ async function loadValidSourceChunksForPosts(
     .from(sourceChunks)
     .where(
       and(
+        inArray(sourceChunks.id, ids),
         eq(sourceChunks.userId, userId),
         eq(sourceChunks.sourceType, "github"),
         eq(sourceChunks.isActive, true),
       ),
     );
-  return new Map(
-    rows.filter((row) => ids.includes(row.id)).map((row) => [row.id, row]),
-  );
+  return new Map(rows.map((row) => [row.id, row]));
 }
 
 function signalScore(metadata: unknown) {

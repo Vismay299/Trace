@@ -75,7 +75,6 @@ describe("GitHub webhooks", () => {
 
     expect(jobs).toHaveLength(1);
     expect(jobs[0]).toMatchObject({
-      jobId: "github-webhook:delivery-1:connection-1:1:12",
       userId: "user-1",
       sourceConnectionId: "connection-1",
       target: {
@@ -83,5 +82,8 @@ describe("GitHub webhooks", () => {
         pullRequestNumbers: [12],
       },
     });
+    expect(jobs[0]?.jobId).toMatch(
+      /^github-webhook:delivery-1:connection-1:1:[a-f0-9]{24}$/,
+    );
   });
 });

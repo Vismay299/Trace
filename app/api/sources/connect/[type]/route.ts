@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ForbiddenError, requireProTier, requireUserId } from "@/lib/auth";
 import { isSourceType } from "@/lib/integrations/shared/types";
 import {
-  buildGitHubAuthorizeUrl,
+  buildGitHubInstallUrl,
   createGitHubOAuthState,
   encodeOAuthState,
 } from "@/lib/integrations/github/auth";
@@ -40,14 +40,25 @@ export async function GET(
     );
   }
 
-  const requestUrl = new URL(req.url);
-  const origin = `${requestUrl.protocol}//${requestUrl.host}`;
+  let redirectUrl: string;
   const state = createGitHubOAuthState("/sources");
   const encodedState = encodeOAuthState(state);
-  const redirectUrl = buildGitHubAuthorizeUrl({
-    state: encodedState,
-    redirectUri: `${origin}/api/sources/github/callback`,
-  });
+  try {
+    redirectUrl = buildGitHubInstallUrl({
+      state: encodedState,
+    });
+  } catch (err) {
+    if (
+      err instanceof Error &&
+      err.message.includes("GITHUB_SOURCE_APP_SLUG")
+    ) {
+      const url = new URL(req.url);
+      return NextResponse.redirect(
+        `${url.origin}/sources?source_error=github_app_not_configured`,
+      );
+    }
+    throw err;
+  }
   const res = NextResponse.redirect(redirectUrl);
   res.cookies.set("trace_github_source_state", state.value, {
     httpOnly: true,

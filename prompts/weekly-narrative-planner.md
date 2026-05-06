@@ -24,6 +24,9 @@ Pillars:
 RECENT SOURCE ACTIVITY
 {{sourceActivitySummary}}
 
+RECENT GITHUB EVIDENCE
+{{recentGitHubEvidence}}
+
 WEEKLY CHECK-IN ANSWERS
 {{checkinAnswers}}
 
@@ -47,7 +50,8 @@ Return JSON:
 "title": "Specific story title",
 "summary": "What this anchor story argues, in 2 sentences.",
 "pillar_match": "pillar_1 | pillar_2 | pillar_3",
-"source_note": "Which check-in answer or artifact this was extracted from."
+"source_note": "Which check-in answer or artifact this was extracted from.",
+"source_chunk_id": "Optional. Use only an exact source_chunk_id listed in RECENT GITHUB EVIDENCE when this story is based on that GitHub artifact."
 },
 "recommended_posts": [
 {
@@ -56,7 +60,8 @@ Return JSON:
 "title": "Specific title for the post.",
 "summary": "1-2 sentence beat.",
 "pillar_match": "pillar_1 | pillar_2 | pillar_3",
-"source_note": "Which check-in answer or artifact this came from."
+"source_note": "Which check-in answer or artifact this came from.",
+"source_chunk_id": "Optional. Use only an exact source_chunk_id listed in RECENT GITHUB EVIDENCE when this post is based on that GitHub artifact."
 }
 ],
 "proof_assets": ["List specific assets the user should attach — e.g. 'Screenshot of the auth latency graph', 'Quote from PR #142'."],
@@ -70,6 +75,7 @@ Return JSON:
 RULES
 
 - Every recommended post must have a real source_note. No invented traction.
+- Never invent source_chunk_id. Only use a source_chunk_id copied exactly from RECENT GITHUB EVIDENCE.
 - 4-6 recommended_posts total (anchor included is separate).
 - pillar_balance integers must sum to recommended_posts count + 1 (for anchor).
 - Prefer specific earned stories over broad advice.

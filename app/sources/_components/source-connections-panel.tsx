@@ -315,19 +315,25 @@ function SyncStatus({
   const lastStats = connection.syncCursor?.lastStats as
     | {
         reposScanned?: number;
-        artifactsSeen?: number;
-        insertedChunks?: number;
-        skippedLowSignal?: number;
+        artifactsScanned?: number;
+        artifactsKept?: number;
+        chunksCreated?: number;
+        skippedByRule?: Record<string, number>;
         shipToPostEnqueued?: number;
       }
     | undefined;
   if (!lastStats) return null;
+  const skipped = Object.values(lastStats.skippedByRule ?? {}).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
 
   return (
     <p className="mt-2 text-sm text-text-muted">
       Last sync scanned {lastStats.reposScanned ?? 0} repos, added{" "}
-      {lastStats.insertedChunks ?? 0} chunks, skipped{" "}
-      {lastStats.skippedLowSignal ?? 0} low-signal items, and queued{" "}
+      {lastStats.chunksCreated ?? 0} chunks from{" "}
+      {lastStats.artifactsKept ?? 0} meaningful items, skipped {skipped} noisy
+      items, and queued{" "}
       {lastStats.shipToPostEnqueued ?? 0} Ship-to-Post drafts.
     </p>
   );

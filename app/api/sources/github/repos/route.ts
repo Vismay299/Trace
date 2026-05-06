@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { ForbiddenError, requireProTier, requireUserId } from "@/lib/auth";
 import { getSourceConnection } from "@/lib/integrations/shared/connections";
-import { decryptToken } from "@/lib/integrations/github/crypto";
 import {
   GitHubTokenError,
   listGitHubRepos,
 } from "@/lib/integrations/github/client";
+import { getInstallationAccessToken } from "@/lib/integrations/github/auth";
 import { db } from "@/lib/db";
 import { sourceConnections } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -36,12 +36,18 @@ export async function GET(req: Request) {
   if (!connection || connection.sourceType !== "github") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (!connection.accessTokenEncrypted) {
-    return NextResponse.json({ error: "GitHub is not connected" }, { status: 409 });
+  if (!connection.providerInstallationId) {
+    return NextResponse.json(
+      { error: "Reconnect GitHub to enable app-based repo sync." },
+      { status: 409 },
+    );
   }
 
   try {
-    const repos = await listGitHubRepos(decryptToken(connection.accessTokenEncrypted));
+    const token = await getInstallationAccessToken(
+      connection.providerInstallationId,
+    );
+    const repos = await listGitHubRepos(token);
     return NextResponse.json({ repos });
   } catch (err) {
     if (err instanceof GitHubTokenError) {

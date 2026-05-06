@@ -2,10 +2,8 @@ import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/auth";
 import {
   decodeOAuthState,
-  exchangeGitHubCode,
+  getGitHubInstallation,
 } from "@/lib/integrations/github/auth";
-import { getGitHubUser } from "@/lib/integrations/github/client";
-import { encryptToken } from "@/lib/integrations/github/crypto";
 import { upsertSourceConnection } from "@/lib/integrations/shared/connections";
 import { captureServerEvent } from "@/lib/analytics/server";
 
@@ -26,34 +24,34 @@ export async function GET(req: Request) {
   }
 
   const url = new URL(req.url);
-  const code = url.searchParams.get("code");
+  const installationId = url.searchParams.get("installation_id");
+  const setupAction = url.searchParams.get("setup_action");
   const stateParam = url.searchParams.get("state");
   const cookieState = readCookie(req, "trace_github_source_state");
   const state = stateParam ? decodeOAuthState(stateParam) : null;
-  if (!code || !state || state.value !== cookieState) {
+  if (!installationId || !state || state.value !== cookieState) {
     return redirectWithError(req, "invalid_state");
   }
 
   try {
     const origin = `${url.protocol}//${url.host}`;
-    const token = await exchangeGitHubCode({
-      code,
-      redirectUri: `${origin}/api/sources/github/callback`,
-    });
-    const githubUser = await getGitHubUser(token.accessToken);
+    const installation = await getGitHubInstallation(installationId);
+    const account = installation.account;
     const connection = await upsertSourceConnection({
       userId,
       sourceType: "github",
       status: "needs_selection",
-      accessTokenEncrypted: encryptToken(token.accessToken),
-      providerAccountId: String(githubUser.id),
+      providerAccountId: account?.id ? String(account.id) : null,
+      providerInstallationId: String(installation.id),
       sourceMetadata: {
-        githubLogin: githubUser.login,
-        githubUserId: githubUser.id,
-        avatarUrl: githubUser.avatar_url,
-        profileUrl: githubUser.html_url,
-        accountType: githubUser.type,
-        scopes: token.scope.split(",").map((scope) => scope.trim()).filter(Boolean),
+        githubLogin: account?.login ?? null,
+        githubAccountId: account?.id ?? null,
+        avatarUrl: account?.avatar_url ?? null,
+        profileUrl: account?.html_url ?? null,
+        accountType: account?.type ?? null,
+        installationId: installation.id,
+        repositorySelection: installation.repository_selection ?? null,
+        setupAction,
       },
     });
     captureServerEvent({

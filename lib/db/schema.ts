@@ -379,6 +379,7 @@ export type RecommendedPost = {
   summary: string;
   pillar_match: string;
   source_note: string;
+  source_chunk_id?: string;
   is_anchor?: boolean;
 };
 

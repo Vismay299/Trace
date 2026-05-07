@@ -175,6 +175,7 @@ export function SourceConnectionsPanel({
                       item.id === connection.id ? connection : item,
                     ),
                   );
+                  setActiveConnectionId(null);
                   router.refresh();
                 }}
               />

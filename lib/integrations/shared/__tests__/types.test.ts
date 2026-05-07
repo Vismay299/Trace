@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { githubRepoSelectionLimitForTier } from "../limits";
 import { isSourceType, normalizeConnectionState } from "../types";
 
 describe("shared source integration types", () => {
@@ -13,5 +14,10 @@ describe("shared source integration types", () => {
     expect(normalizeConnectionState("ready")).toBe("ready");
     expect(normalizeConnectionState("strange")).toBe("not_connected");
     expect(normalizeConnectionState(null)).toBe("not_connected");
+  });
+
+  it("limits Pro GitHub repo selection to one repository", () => {
+    expect(githubRepoSelectionLimitForTier("pro")).toBe(1);
+    expect(githubRepoSelectionLimitForTier("free")).toBe(0);
   });
 });

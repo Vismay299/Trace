@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUserId } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
 import {
   disconnectSourceConnection,
   enqueueSourceSync,
@@ -9,7 +11,9 @@ import {
   updateConnectionSelection,
 } from "@/lib/integrations/shared/connections";
 import { repoOptionToSelectedResource } from "@/lib/integrations/github/client";
+import { githubRepoSelectionLimitForTier } from "@/lib/integrations/shared/limits";
 import { captureServerEvent } from "@/lib/analytics/server";
+import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
 
@@ -59,6 +63,17 @@ export async function PATCH(
 
   const selectedRepos = parsed.data.selectedRepos;
   if (selectedRepos && result.connection.sourceType === "github") {
+    const selectionLimit = githubRepoSelectionLimitForTier(result.tier);
+    if (selectedRepos.length > selectionLimit) {
+      return NextResponse.json(
+        {
+          error: `Your plan allows ${selectionLimit} GitHub repo selection${
+            selectionLimit === 1 ? "" : "s"
+          }.`,
+        },
+        { status: 403 },
+      );
+    }
     const updated = await updateConnectionSelection({
       userId: result.userId,
       connectionId: result.connection.id,
@@ -79,8 +94,10 @@ export async function PATCH(
       },
     });
     if (updated.added.length) {
-      const sync = await enqueueSourceSync(result.userId, result.connection.id)
-        .catch(() => null);
+      const sync = await enqueueSourceSync(
+        result.userId,
+        result.connection.id,
+      ).catch(() => null);
       if (sync) {
         return NextResponse.json({
           connection: toSummary(sync.connection),
@@ -118,9 +135,16 @@ async function withConnection(ctx: { params: Promise<{ id: string }> }) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await ctx.params;
-  const connection = await getSourceConnection(userId, id);
-  if (!connection) {
+  const [connection, [user]] = await Promise.all([
+    getSourceConnection(userId, id),
+    db
+      .select({ tier: users.tier })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1),
+  ]);
+  if (!connection || !user) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  return { userId, connection };
+  return { userId, connection, tier: user.tier };
 }

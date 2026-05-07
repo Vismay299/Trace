@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Pill } from "@/components/ui/pill";
 import type { SourceConnectionSummary } from "@/lib/integrations/shared/types";
 import type { RepoOption } from "@/lib/integrations/github/client";
+import { githubRepoSelectionLimitForTier } from "@/lib/integrations/shared/limits";
 import type { JobStatus } from "@/lib/jobs/types";
 
 export function SourceConnectionsPanel({
@@ -117,7 +118,11 @@ export function SourceConnectionsPanel({
   }
 
   async function disconnect(connection: SourceConnectionSummary) {
-    if (!window.confirm("Disconnect this source? Synced chunks stay inactive until a future cleanup pass.")) {
+    if (
+      !window.confirm(
+        "Disconnect this source? Synced chunks stay inactive until a future cleanup pass.",
+      )
+    ) {
       return;
     }
     setBusyId(connection.id);
@@ -152,13 +157,18 @@ export function SourceConnectionsPanel({
               onConnect={() => {
                 window.location.href = "/api/sources/connect/github";
               }}
-              onSelect={() => setActiveConnectionId(githubConnection?.id ?? null)}
+              onSelect={() =>
+                setActiveConnectionId(githubConnection?.id ?? null)
+              }
               onSync={() => githubConnection && syncNow(githubConnection)}
-              onDisconnect={() => githubConnection && disconnect(githubConnection)}
+              onDisconnect={() =>
+                githubConnection && disconnect(githubConnection)
+              }
             />
             {githubConnection && activeConnectionId === githubConnection.id ? (
               <RepoSelector
                 connection={githubConnection}
+                selectionLimit={githubRepoSelectionLimitForTier(tier)}
                 onSaved={(connection) => {
                   setConnections((current) =>
                     current.map((item) =>
@@ -251,7 +261,9 @@ function SourceCard({
               : "Connect GitHub, then explicitly choose the repos Trace can read."}
           </p>
           {connection?.lastSyncError ? (
-            <p className="mt-2 text-sm text-danger">{connection.lastSyncError}</p>
+            <p className="mt-2 text-sm text-danger">
+              {connection.lastSyncError}
+            </p>
           ) : null}
           {connection ? <SyncStatus connection={connection} job={job} /> : null}
           {connection?.lastSyncSucceededAt ? (
@@ -331,9 +343,8 @@ function SyncStatus({
   return (
     <p className="mt-2 text-sm text-text-muted">
       Last sync scanned {lastStats.reposScanned ?? 0} repos, added{" "}
-      {lastStats.chunksCreated ?? 0} chunks from{" "}
-      {lastStats.artifactsKept ?? 0} meaningful items, skipped {skipped} noisy
-      items, and queued{" "}
+      {lastStats.chunksCreated ?? 0} chunks from {lastStats.artifactsKept ?? 0}{" "}
+      meaningful items, skipped {skipped} noisy items, and queued{" "}
       {lastStats.shipToPostEnqueued ?? 0} Ship-to-Post drafts.
     </p>
   );
@@ -341,9 +352,11 @@ function SyncStatus({
 
 function RepoSelector({
   connection,
+  selectionLimit,
   onSaved,
 }: {
   connection: SourceConnectionSummary;
+  selectionLimit: number;
   onSaved: (connection: SourceConnectionSummary) => void;
 }) {
   const [repos, setRepos] = useState<RepoOption[]>([]);
@@ -375,6 +388,14 @@ function RepoSelector({
   }
 
   async function save() {
+    if (selectedIds.size > selectionLimit) {
+      setError(
+        `Your plan allows ${selectionLimit} GitHub repo selection${
+          selectionLimit === 1 ? "" : "s"
+        }.`,
+      );
+      return;
+    }
     setSaving(true);
     setError(null);
     const selectedRepos = repos.filter((repo) => selectedIds.has(repo.id));
@@ -412,8 +433,9 @@ function RepoSelector({
         <div>
           <h3 className="text-lg font-medium text-text">Choose repositories</h3>
           <p className="mt-1 text-sm text-text-muted">
-            Nothing is selected by default. Pick only the repos that represent
-            useful build activity.
+            Nothing is selected by default. Your plan allows {selectionLimit}{" "}
+            GitHub repo selection
+            {selectionLimit === 1 ? "" : "s"}.
           </p>
         </div>
         <Button onClick={loadRepos} variant="ghost" disabled={loading}>
@@ -458,12 +480,19 @@ function RepoSelector({
                   className="flex cursor-pointer gap-3 rounded-card border border-border-strong bg-bg px-4 py-3 transition hover:border-accent"
                 >
                   <input
-                    type="checkbox"
+                    type={selectionLimit === 1 ? "radio" : "checkbox"}
+                    name={`repo-selection-${connection.id}`}
                     checked={checked}
                     onChange={(event) => {
                       const next = new Set(selectedIds);
-                      if (event.target.checked) next.add(repo.id);
-                      else next.delete(repo.id);
+                      if (event.target.checked) {
+                        if (selectionLimit === 1) {
+                          next.clear();
+                        }
+                        next.add(repo.id);
+                      } else {
+                        next.delete(repo.id);
+                      }
                       setSelectedIds(next);
                     }}
                     className="mt-1 size-4 accent-accent"
@@ -476,9 +505,12 @@ function RepoSelector({
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-text-muted">
-              {selectedIds.size} selected
+              {selectedIds.size}/{selectionLimit} selected
             </p>
-            <Button onClick={save} disabled={saving}>
+            <Button
+              onClick={save}
+              disabled={saving || selectedIds.size > selectionLimit}
+            >
               {saving ? "Saving..." : "Save selection"}
             </Button>
           </div>
